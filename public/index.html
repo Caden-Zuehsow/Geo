@@ -65,7 +65,7 @@
 
   <!-- Google Maps JS API for Street View -->
   <script async
-    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBnsEvmHk5gFf5rOXtUqvg0scRdXPg8ed4&callback=initStreetView">
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCQHZHmpF-9_7jEixW8z_h_-zbImwnI3S0&callback=initStreetView">
   </script>
 
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
@@ -73,7 +73,7 @@
 
   <script>
     const SERVER_URL = "geo-production-f14c.up.railway.app";
-    const GOOGLE_API_KEY = "AIzaSyBnsEvmHk5gFf5rOXtUqvg0scRdXPg8ed4";
+    const GOOGLE_API_KEY = "AIzaSyCQHZHmpF-9_7jEixW8z_h_-zbImwnI3S0";
 
     const socket = io(SERVER_URL, { transports: ["websocket"] });
 
@@ -121,7 +121,6 @@
         { position: { lat: 40.7484, lng: -73.9857 }, pov: { heading:0, pitch:0 }, zoom:1 }
       );
 
-      // When the position changes, update current pick
       streetViewPanorama.addListener("position_changed", () => {
         const pos = streetViewPanorama.getPosition();
         pickerLatLng = { lat: pos.lat(), lng: pos.lng() };
