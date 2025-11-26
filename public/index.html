@@ -1,0 +1,338 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>SpotGuess Duel — Map + Multiplayer</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    body { font-family: system-ui, Arial; margin:0; padding:0; display:flex; height:100vh; }
+    #left { width: 380px; padding:12px; box-sizing:border-box; background:#f7f7f8; overflow:auto; border-right:1px solid #ddd; }
+    #map { flex:1; }
+    #map, .smallmap { height:100%; }
+    button { padding:8px 12px; margin:6px 0; }
+    .panel { background:white; padding:10px; border-radius:8px; margin-bottom:12px; box-shadow:0 2px 6px rgba(0,0,0,0.05); }
+    input[type="text"] { width:100%; padding:8px; box-sizing:border-box; }
+    img.preview { max-width:100%; display:block; margin-top:8px; border-radius:6px; }
+    .hint { font-size:0.9rem; color:#555; margin-top:6px; }
+    .status { font-weight:600; margin-top:6px; }
+  </style>
+</head>
+<body>
+  <div id="left">
+    <h2>SpotGuess Duel</h2>
+
+    <div class="panel">
+      <div id="lobbyControls">
+        <button id="createBtn">Create Room</button>
+        <div style="margin-top:8px;">
+          <input id="roomInput" placeholder="Enter Room Code (e.g. ABC123)" />
+          <button id="joinBtn">Join Room</button>
+        </div>
+        <div class="hint">Open the same room in another browser to play (2 players).</div>
+      </div>
+    </div>
+
+    <div class="panel" id="roomPanel" style="display:none;">
+      <div>Room: <span id="roomIdSpan"></span></div>
+      <div>Players: <ul id="playersList"></ul></div>
+      <div>Scores: <pre id="scoresPre"></pre></div>
+      <div class="status" id="statusText">Waiting for players...</div>
+    </div>
+
+    <div class="panel" id="pickerPanel" style="display:none;">
+      <h3>Picker — Choose a spot</h3>
+      <div>Click on the map (right panel) to choose the location for the opponent to guess.</div>
+      <div style="margin-top:8px;">
+        <label>Optional image to show guesser:</label>
+        <input type="file" id="imgUpload" accept="image/*">
+        <img id="imgPreview" class="preview" style="display:none;">
+      </div>
+      <div style="margin-top:8px;">
+        <input id="hintInput" placeholder="Optional hint (e.g. 'Near a famous river')" />
+      </div>
+      <button id="submitPickBtn" disabled>Send Pick to Guesser</button>
+    </div>
+
+    <div class="panel" id="guesserPanel" style="display:none;">
+      <h3>Guesser — Make your guess</h3>
+      <div id="shownImageWrap" style="display:none;">
+        <div>Image from picker:</div>
+        <img id="shownImage" class="preview">
+      </div>
+      <div style="margin-top:8px;">Click the map to place your guess marker, then press <b>Submit Guess</b>.</div>
+      <button id="submitGuessBtn" disabled>Submit Guess</button>
+    </div>
+
+    <div class="panel" id="resultPanel" style="display:none;">
+      <h3>Round Result</h3>
+      <div id="resultText"></div>
+    </div>
+
+    <div class="panel" style="margin-top:8px;">
+      <div style="font-size:0.85rem;color:#666;">Notes: Distance-based scoring. After each round roles swap.</div>
+    </div>
+  </div>
+
+  <div id="map"></div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script>
+    const socket = io();
+
+    // UI refs
+    const createBtn = document.getElementById('createBtn');
+    const joinBtn = document.getElementById('joinBtn');
+    const roomInput = document.getElementById('roomInput');
+    const roomPanel = document.getElementById('roomPanel');
+    const roomIdSpan = document.getElementById('roomIdSpan');
+    const playersList = document.getElementById('playersList');
+    const scoresPre = document.getElementById('scoresPre');
+    const statusText = document.getElementById('statusText');
+
+    const pickerPanel = document.getElementById('pickerPanel');
+    const guesserPanel = document.getElementById('guesserPanel');
+    const submitPickBtn = document.getElementById('submitPickBtn');
+    const submitGuessBtn = document.getElementById('submitGuessBtn');
+    const imgUpload = document.getElementById('imgUpload');
+    const imgPreview = document.getElementById('imgPreview');
+    const shownImageWrap = document.getElementById('shownImageWrap');
+    const shownImage = document.getElementById('shownImage');
+    const hintInput = document.getElementById('hintInput');
+    const resultPanel = document.getElementById('resultPanel');
+    const resultText = document.getElementById('resultText');
+
+    let myRoomId = null;
+    let mySocketId = null;
+    let players = [];
+    let scores = {};
+    let currentPickerId = null;
+    let chosenLatLng = null; // picker's chosen spot
+    let guessLatLng = null;  // guesser's guess
+    let uploadedDataUrl = null;
+
+    // Leaflet map
+    const map = L.map('map').setView([20,0], 2);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+
+    let pickerMarker = null;
+    let guessMarker = null;
+
+    function clearMarkers() {
+      if (pickerMarker) { map.removeLayer(pickerMarker); pickerMarker=null; }
+      if (guessMarker) { map.removeLayer(guessMarker); guessMarker=null; }
+    }
+
+    // Map click handler behavior differs by role & stage
+    map.on('click', (e) => {
+      if (!myRoomId) return;
+      if (currentPickerId === mySocketId) {
+        // picker choosing spot
+        chosenLatLng = e.latlng;
+        if (pickerMarker) map.removeLayer(pickerMarker);
+        pickerMarker = L.marker(chosenLatLng, { draggable:false }).addTo(map).bindPopup('Picked spot (hidden from guesser)').openPopup();
+        submitPickBtn.disabled = false;
+      } else {
+        // guesser choosing guess
+        guessLatLng = e.latlng;
+        if (guessMarker) map.removeLayer(guessMarker);
+        guessMarker = L.marker(guessLatLng, { draggable:false }).addTo(map).bindPopup('Your guess').openPopup();
+        submitGuessBtn.disabled = false;
+      }
+    });
+
+    // UI actions
+    createBtn.onclick = () => {
+      socket.emit('createRoom', (res) => {
+        if (res.ok) {
+          myRoomId = res.roomId;
+          roomIdSpan.textContent = myRoomId;
+          roomPanel.style.display = '';
+          document.getElementById('lobbyControls').style.display = 'none';
+          statusText.textContent = 'Waiting for player to join...';
+        }
+      });
+    };
+
+    joinBtn.onclick = () => {
+      const r = (roomInput.value || '').trim().toUpperCase();
+      if (!r) return alert('Enter a room code');
+      socket.emit('joinRoom', r, (res) => {
+        if (!res.ok) return alert(res.err || 'Cannot join');
+        myRoomId = r;
+        roomIdSpan.textContent = myRoomId;
+        roomPanel.style.display = '';
+        document.getElementById('lobbyControls').style.display = 'none';
+      });
+    };
+
+    imgUpload.onchange = async (ev) => {
+      const f = ev.target.files[0];
+      if (!f) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        uploadedDataUrl = e.target.result;
+        imgPreview.src = uploadedDataUrl;
+        imgPreview.style.display = '';
+      };
+      reader.readAsDataURL(f);
+    };
+
+    submitPickBtn.onclick = () => {
+      if (!chosenLatLng) return alert('Pick a spot on the map first');
+      submitPickBtn.disabled = true;
+      // send to server: lat/lng + optional image data
+      socket.emit('pickLocation', {
+        roomId: myRoomId,
+        lat: chosenLatLng.lat,
+        lng: chosenLatLng.lng,
+        imageDataUrl: uploadedDataUrl || null,
+        hint: hintInput.value || null
+      }, (res) => {
+        if (!res.ok) {
+          alert('Error sending pick: ' + (res.err || ''));
+          submitPickBtn.disabled = false;
+        } else {
+          // picker waits; hide marker for guesser by removing from their own view after small delay
+          statusText.textContent = 'Pick sent — waiting for guesser to respond';
+          // remove your visible pick to avoid giving away (picker still sees it locally)
+          // (we keep it visible for picker)
+        }
+      });
+    };
+
+    submitGuessBtn.onclick = () => {
+      if (!guessLatLng) return alert('Place your guess on the map');
+      submitGuessBtn.disabled = true;
+      socket.emit('makeGuess', {
+        roomId: myRoomId,
+        lat: guessLatLng.lat,
+        lng: guessLatLng.lng
+      }, (res) => {
+        if (!res.ok) {
+          alert('Error sending guess: ' + (res.err || ''));
+          submitGuessBtn.disabled = false;
+        } else {
+          statusText.textContent = 'Guess submitted — waiting for result...';
+        }
+      });
+    };
+
+    // Socket events
+    socket.on('connect', () => {
+      mySocketId = socket.id;
+    });
+
+    socket.on('roomJoined', (data) => {
+      players = data.players || [];
+      scores = data.scores || {};
+      currentPickerId = data.pickerSocketId;
+      updateLobbyUI();
+      updateRolePanels();
+    });
+
+    socket.on('playerLeft', (d) => {
+      statusText.textContent = 'Player left. Waiting...';
+      // reset UI
+      players = players.filter(p => p !== d.socketId);
+      updateLobbyUI();
+    });
+
+    socket.on('startGuess', (data) => {
+      // this client is the guesser
+      statusText.textContent = 'Your opponent picked a spot. Make your guess.';
+      // show image if present
+      if (data.imageDataUrl) {
+        shownImage.src = data.imageDataUrl;
+        shownImageWrap.style.display = '';
+      } else shownImageWrap.style.display = 'none';
+      // enable guesser UI
+      submitGuessBtn.disabled = true; // until they click on map
+      guesserPanel.style.display = '';
+      pickerPanel.style.display = 'none';
+      // hide picker's marker for guesser (server doesn't show that) - we already never displayed it for guesser
+      // clear previous markers
+      if (pickerMarker) { /* leave for picker only */ }
+      if (guessMarker) { map.removeLayer(guessMarker); guessMarker=null; }
+      guessLatLng = null;
+    });
+
+    socket.on('roundResult', (res) => {
+      // show both markers: correct and guess
+      clearMarkers();
+      pickerMarker = L.marker([res.correct.lat, res.correct.lng]).addTo(map).bindPopup('Correct').openPopup();
+      guessMarker = L.marker([res.guess.lat, res.guess.lng]).addTo(map).bindPopup('Guess').openPopup();
+      map.fitBounds(L.latLngBounds([res.correct.lat, res.correct.lng], [res.guess.lat, res.guess.lng]).pad(0.5));
+
+      resultPanel.style.display = '';
+      resultText.innerHTML = `
+        Distance: <b>${res.distanceMeters} m</b><br>
+        Points awarded: <b>${res.pointsAwarded}</b><br>
+      `;
+      scores = res.scores || scores;
+      updateScoresUI();
+      statusText.textContent = 'Round complete. Roles will swap shortly.';
+      submitPickBtn.disabled = true;
+      submitGuessBtn.disabled = true;
+    });
+
+    socket.on('newRound', (data) => {
+      // prepare UI for new round, show who is picker
+      currentPickerId = data.pickerSocketId;
+      scores = data.scores || scores;
+      updateScoresUI();
+      updateRolePanels();
+      resultPanel.style.display = 'none';
+      // clear markers for fresh start after short delay
+      setTimeout(()=>{ clearMarkers(); map.setView([20,0],2); }, 1200);
+    });
+
+    function updateLobbyUI(){
+      roomIdSpan.textContent = myRoomId || '';
+      playersList.innerHTML = '';
+      for (const p of players) {
+        const li = document.createElement('li');
+        li.textContent = (p === mySocketId ? 'You' : p) + (p === currentPickerId ? ' (picker)' : '');
+        playersList.appendChild(li);
+      }
+      updateScoresUI();
+    }
+
+    function updateScoresUI(){
+      scoresPre.textContent = JSON.stringify(scores, null, 2);
+    }
+
+    function updateRolePanels(){
+      // if not both players, just show waiting
+      if (!myRoomId) return;
+      if (players.length < 2) {
+        statusText.textContent = 'Waiting for another player to join...';
+        pickerPanel.style.display = 'none';
+        guesserPanel.style.display = 'none';
+        return;
+      }
+      // we have two players
+      roomPanel.style.display = '';
+      if (currentPickerId === mySocketId) {
+        // I'm picker
+        statusText.textContent = 'You are the picker — choose a spot on the map.';
+        pickerPanel.style.display = '';
+        guesserPanel.style.display = 'none';
+        submitPickBtn.disabled = true;
+        imgPreview.style.display = uploadedDataUrl ? '' : 'none';
+      } else {
+        // I'm guesser
+        statusText.textContent = 'You are the guesser — wait for picker to send the round.';
+        pickerPanel.style.display = 'none';
+        guesserPanel.style.display = 'none';
+      }
+    }
+
+    // initialize small state
+    updateRolePanels();
+  </script>
+</body>
+</html>
