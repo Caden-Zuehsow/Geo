@@ -5,8 +5,7 @@
   <title>SpotGuess Duel — Map + Multiplayer + Street View</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
-    html, body { height:100%; margin:0; padding:0; font-family: system-ui, Arial; }
-    body { display:flex; height:100%; }
+    body { font-family: system-ui, Arial; margin:0; padding:0; display:flex; height:100vh; }
     #left { width: 380px; padding:12px; box-sizing:border-box; background:#f7f7f8; overflow:auto; border-right:1px solid #ddd; }
     #map { flex:1; height:100%; }
     button { padding:8px 12px; margin:6px 0; }
@@ -38,10 +37,10 @@
     </div>
 
     <div class="panel" id="pickerPanel" style="display:none;">
-      <h3>Picker — Street View</h3>
-      <div id="streetView" style="width:100%; height:250px; border-radius:8px; margin:8px 0;"></div>
+      <h3>Picker — Street View on Map</h3>
+      <p>Use Pegman on the map to move around in Street View.</p>
       <input id="hintInput" placeholder="Optional hint (e.g. 'Near a famous river')" />
-      <button id="submitPickBtn" disabled>Choose this Spot</button>
+      <button id="submitPickBtn" disabled>Pick this spot</button>
     </div>
 
     <div class="panel" id="guesserPanel" style="display:none;">
@@ -62,7 +61,10 @@
 
   <div id="map"></div>
 
+  <!-- Google Maps JS API -->
+  <script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCQHZHmpF-9_7jEixW8z_h_-zbImwnI3S0&callback=initMap"></script>
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
   <script>
     const SERVER_URL = "geo-production-f14c.up.railway.app";
     const GOOGLE_API_KEY = "AIzaSyCQHZHmpF-9_7jEixW8z_h_-zbImwnI3S0";
@@ -93,54 +95,40 @@
     let scores = {};
     let currentPickerId = null;
 
-    let map;
-    let pickerMarker = null;
-    let guessMarker = null;
+    let map, pickerLatLng = null;
+    let pickerMarker = null, guessMarker = null;
 
-    function initGoogleMaps() {
-      // Initialize main Google Map
+    function initMap() {
       map = new google.maps.Map(document.getElementById("map"), {
         center: { lat: 20, lng: 0 },
         zoom: 2,
-        streetViewControl: true,
+        streetViewControl: true
       });
 
-      // Initialize Street View for picker
-      streetViewPanorama = new google.maps.StreetViewPanorama(
-        document.getElementById("streetView"),
-        {
-          position: { lat: 40.7484, lng: -73.9857 },
-          pov: { heading:0, pitch:0 },
-          zoom:1
-        }
-      );
+      const streetView = map.getStreetView();
+      streetView.setVisible(true);
 
-      // Update pickerLatLng when moving in Street View
-      streetViewPanorama.addListener("position_changed", () => {
-        const pos = streetViewPanorama.getPosition();
+      // Picker moves Street View on the map
+      streetView.addListener("position_changed", () => {
+        const pos = streetView.getPosition();
         pickerLatLng = { lat: pos.lat(), lng: pos.lng() };
-        submitPickBtn.disabled = false;
+        if(currentPickerId === mySocketId) submitPickBtn.disabled = false;
       });
 
-      // Add map click listener for guesser
-      map.addListener("click", (e) => {
+      // Guesser click marker
+      map.addListener('click', e => {
         if (!myRoomId) return;
         if (currentPickerId !== mySocketId) {
-          const guessLatLng = e.latLng;
+          const guessLatLng = { lat: e.latLng.lat(), lng: e.latLng.lng() };
           if (guessMarker) guessMarker.setMap(null);
           guessMarker = new google.maps.Marker({ position: guessLatLng, map: map });
           submitGuessBtn.disabled = false;
 
           submitGuessBtn.onclick = () => {
-            socket.emit('makeGuess', { roomId: myRoomId, lat: guessLatLng.lat(), lng: guessLatLng.lng() });
+            socket.emit('makeGuess', { roomId: myRoomId, lat: guessLatLng.lat, lng: guessLatLng.lng });
           };
         }
       });
-    }
-
-    function clearMarkers() {
-      if (pickerMarker) pickerMarker.setMap(null); pickerMarker=null;
-      if (guessMarker) guessMarker.setMap(null); guessMarker=null;
     }
 
     function generateStreetViewImage(lat,lng){
@@ -148,7 +136,7 @@
     }
 
     submitPickBtn.onclick = () => {
-      if (!pickerLatLng) return alert("Pick a Street View location!");
+      if(!pickerLatLng) return alert("Move Street View to a location first!");
       const imageUrl = generateStreetViewImage(pickerLatLng.lat, pickerLatLng.lng);
       socket.emit("pickLocation", {
         roomId: myRoomId,
@@ -159,54 +147,82 @@
       });
     };
 
-    socket.on('connect', ()=>{ mySocketId=socket.id; });
+    socket.on('connect', ()=>{ mySocketId = socket.id; });
 
-    createBtn.onclick = ()=>{ socket.emit('createRoom', res=>{ if(res.ok){ myRoomId=res.roomId; roomIdSpan.textContent=myRoomId; roomPanel.style.display=''; document.getElementById('lobbyControls').style.display='none'; } }); };
-    joinBtn.onclick = ()=>{ const r=roomInput.value.trim().toUpperCase(); if(!r) return alert("Enter a room code"); socket.emit('joinRoom',r,res=>{ if(!res.ok) return alert(res.err); myRoomId=r; roomIdSpan.textContent=myRoomId; roomPanel.style.display=''; document.getElementById('lobbyControls').style.display='none'; }); };
+    createBtn.onclick = () => {
+      socket.emit('createRoom', res => {
+        if(res.ok){
+          myRoomId = res.roomId;
+          roomIdSpan.textContent = myRoomId;
+          roomPanel.style.display = '';
+          document.getElementById('lobbyControls').style.display='none';
+        }
+      });
+    };
 
-    socket.on('roomJoined', data=>{
-      players=data.players;
-      scores=data.scores;
-      currentPickerId=data.pickerSocketId;
+    joinBtn.onclick = () => {
+      const r = roomInput.value.trim().toUpperCase();
+      if(!r) return alert("Enter a room code");
+      socket.emit('joinRoom', r, res => {
+        if(!res.ok) return alert(res.err);
+        myRoomId = r;
+        roomIdSpan.textContent = myRoomId;
+        roomPanel.style.display = '';
+        document.getElementById('lobbyControls').style.display='none';
+      });
+    };
+
+    socket.on('roomJoined', data => {
+      players = data.players;
+      scores = data.scores;
+      currentPickerId = data.pickerSocketId;
       updateLobbyUI();
       updateRolePanels();
     });
 
-    socket.on('startGuess', data=>{
-      if(data.imageDataUrl){ shownImage.src=data.imageDataUrl; shownImageWrap.style.display=''; } else { shownImageWrap.style.display='none'; }
+    socket.on('startGuess', data => {
+      if(data.imageDataUrl){ shownImage.src=data.imageDataUrl; shownImageWrap.style.display=''; }
+      else shownImageWrap.style.display='none';
       guesserPanel.style.display=''; pickerPanel.style.display='none';
-      statusText.textContent="Make your guess…";
-      clearMarkers();
+      statusText.textContent = "Make your guess…";
+
+      if(pickerMarker) pickerMarker.setMap(null);
+      if(guessMarker) guessMarker.setMap(null);
     });
 
-    socket.on('roundResult', res=>{
-      clearMarkers();
-      pickerMarker = new google.maps.Marker({ position: res.correct, map: map });
-      guessMarker = new google.maps.Marker({ position: res.guess, map: map });
-      resultPanel.style.display=''; resultText.innerHTML=`Distance: <b>${res.distanceMeters} m</b><br>Points: <b>${res.pointsAwarded}</b>`;
-      scores=res.scores; updateScoresUI();
+    socket.on('roundResult', res => {
+      if(pickerMarker) pickerMarker.setMap(null);
+      if(guessMarker) guessMarker.setMap(null);
+      pickerMarker = new google.maps.Marker({ position: {lat: res.correct.lat, lng: res.correct.lng}, map: map });
+      guessMarker = new google.maps.Marker({ position: {lat: res.guess.lat, lng: res.guess.lng}, map: map });
+      resultPanel.style.display=''; 
+      resultText.innerHTML=`Distance: <b>${res.distanceMeters} m</b><br>Points: <b>${res.pointsAwarded}</b>`;
+      scores = res.scores; updateScoresUI();
     });
 
-    socket.on('newRound', data=>{
-      currentPickerId=data.pickerSocketId; scores=data.scores;
-      resultPanel.style.display='none'; clearMarkers();
-      map.setCenter({ lat:20,lng:0 }); map.setZoom(2);
-      updateScoresUI(); updateRolePanels();
+    socket.on('newRound', data => {
+      currentPickerId = data.pickerSocketId;
+      scores = data.scores;
+      resultPanel.style.display='none';
+      if(pickerMarker) pickerMarker.setMap(null);
+      if(guessMarker) guessMarker.setMap(null);
+      map.setCenter({ lat: 20, lng:0 });
+      map.setZoom(2);
+      updateScoresUI();
+      updateRolePanels();
     });
 
-    function updateLobbyUI(){ playersList.innerHTML=players.map(p=>p===mySocketId?"You":p).join(""); updateScoresUI(); }
-    function updateScoresUI(){ scoresPre.textContent=JSON.stringify(scores,null,2); }
+    function updateLobbyUI(){
+      playersList.innerHTML = players.map(p=>p===mySocketId?"You":p).join("");
+      updateScoresUI();
+    }
+    function updateScoresUI(){ scoresPre.textContent = JSON.stringify(scores,null,2); }
 
     function updateRolePanels(){
       if(players.length<2){ pickerPanel.style.display='none'; guesserPanel.style.display='none'; statusText.textContent="Waiting for another player…"; return; }
       if(currentPickerId===mySocketId){ statusText.textContent="You are the picker."; pickerPanel.style.display=''; guesserPanel.style.display='none'; }
       else { statusText.textContent="You are the guesser."; pickerPanel.style.display='none'; guesserPanel.style.display='none'; }
     }
-  </script>
-
-  <!-- Google Maps JS API -->
-  <script async
-    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCQHZHmpF-9_7jEixW8z_h_-zbImwnI3S0&callback=initGoogleMaps">
   </script>
 </body>
 </html>
