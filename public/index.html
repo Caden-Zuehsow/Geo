@@ -11,7 +11,6 @@
     button { padding:8px 12px; margin:6px 0; }
     .panel { background:white; padding:10px; border-radius:8px; margin-bottom:12px; box-shadow:0 2px 6px rgba(0,0,0,0.05); }
     input[type="text"] { width:100%; padding:8px; box-sizing:border-box; }
-    img.preview { max-width:100%; display:block; margin-top:8px; border-radius:6px; }
     .hint { font-size:0.9rem; color:#555; margin-top:6px; }
     .status { font-weight:600; margin-top:6px; }
   </style>
@@ -36,9 +35,9 @@
       <div class="status" id="statusText">Waiting for players...</div>
     </div>
 
+    <!-- Updated Picker Panel -->
     <div class="panel" id="pickerPanel" style="display:none;">
-      <h3>Picker — Street View on Map</h3>
-      <p>Use Pegman on the map to move around in Street View.</p>
+      <h3>Picker</h3>
       <input id="hintInput" placeholder="Optional hint (e.g. 'Near a famous river')" />
       <button id="submitPickBtn" disabled>Pick this spot</button>
     </div>
@@ -112,6 +111,7 @@
       streetView.addListener("position_changed", () => {
         const pos = streetView.getPosition();
         pickerLatLng = { lat: pos.lat(), lng: pos.lng() };
+        if(currentPickerId === mySocketId) submitPickBtn.disabled = true;
         if(currentPickerId === mySocketId) submitPickBtn.disabled = false;
       });
 
@@ -226,4 +226,3 @@
   </script>
 </body>
 </html>
- 
