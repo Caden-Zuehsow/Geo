@@ -8,7 +8,8 @@
   body { font-family: system-ui, Arial; margin:0; padding:0; display:flex; height:100vh; }
   #left { width: 380px; padding:12px; box-sizing:border-box; background:#f7f7f8; overflow:auto; border-right:1px solid #ddd; }
   #map { flex:1; min-height:0; margin-bottom:12px; }
-  #guesserStreetView { width:100%; height:500px; border-radius:8px; background:#ddd; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#555; margin-bottom:8px; }
+  #guesserStreetView { width:100%; height:400px; border-radius:8px; background:#ddd; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#555; margin-bottom:8px; }
+  #guesserMap { width:100%; height:300px; border-radius:8px; margin-bottom:8px; }
   button { padding:8px 12px; margin:6px 0; }
   .panel { background:white; padding:10px; border-radius:8px; margin-bottom:12px; box-shadow:0 2px 6px rgba(0,0,0,0.05); }
   input[type="text"] { width:100%; padding:8px; box-sizing:border-box; }
@@ -48,6 +49,7 @@
   <div class="panel" id="guesserPanel" style="display:none;">
     <h3>Guesser — Make your guess</h3>
     <div id="guesserStreetView">Waiting for picker to pick spot...</div>
+    <div id="guesserMap"></div>
     <button id="submitGuessBtn" disabled>Submit Guess</button>
   </div>
 
@@ -66,7 +68,7 @@
 const SERVER_URL = "geo-production-f14c.up.railway.app";
 const socket = io(SERVER_URL, { transports: ["websocket"] });
 
-// DOM references
+// DOM
 const createBtn = document.getElementById('createBtn');
 const joinBtn = document.getElementById('joinBtn');
 const roomInput = document.getElementById('roomInput');
@@ -83,11 +85,12 @@ const hintInput = document.getElementById('hintInput');
 const resultPanel = document.getElementById('resultPanel');
 const resultText = document.getElementById('resultText');
 const guesserStreetViewDiv = document.getElementById('guesserStreetView');
+const guesserMapDiv = document.getElementById('guesserMap');
 
 let myRoomId = null, mySocketId = null;
 let players = [], scores = {}, currentPickerId = null;
 let pickerMap, pickerStreetView, pickerLatLng = null;
-let guessMarker = null, guesserPanorama = null;
+let guesserMap, guessMarker = null, guesserPanorama = null;
 
 function initMaps() {
   // Picker map + Street View
@@ -101,6 +104,25 @@ function initMaps() {
     const pos = pickerStreetView.getPosition();
     pickerLatLng = {lat: pos.lat(), lng: pos.lng()};
     if(currentPickerId === mySocketId) submitPickBtn.disabled = false;
+  });
+
+  // Guesser map (for guessing)
+  guesserMap = new google.maps.Map(guesserMapDiv, {
+    center: {lat:20,lng:0},
+    zoom: 2,
+    streetViewControl: false
+  });
+
+  guesserMap.addListener("click", e => {
+    if(currentPickerId === mySocketId) return; // picker cannot click
+    const guessLatLng = {lat:e.latLng.lat(), lng:e.latLng.lng()};
+    if(guessMarker) guessMarker.setMap(null);
+    guessMarker = new google.maps.Marker({position: guessLatLng, map: guesserMap});
+    submitGuessBtn.disabled = false;
+
+    submitGuessBtn.onclick = () => {
+      socket.emit('makeGuess', {roomId: myRoomId, lat: guessLatLng.lat, lng: guessLatLng.lng});
+    };
   });
 }
 
@@ -152,12 +174,15 @@ socket.on('startGuess', data => {
   // Locked Street View for guesser
   guesserPanorama = new google.maps.StreetViewPanorama(guesserStreetViewDiv, {
     position: {lat: data.lat, lng: data.lng},
-    pov: {heading: 0, pitch:0},
+    pov: {heading:0, pitch:0},
     zoom:1,
     disableDefaultUI:true,
     clickToGo:false,
     linksControl:false
   });
+
+  // Reset marker
+  if(guessMarker) guessMarker.setMap(null);
 });
 
 socket.on('roundResult', res => {
@@ -170,8 +195,12 @@ socket.on('newRound', data => {
   currentPickerId = data.pickerSocketId;
   scores = data.scores;
   resultPanel.style.display='none';
-  guesserStreetViewDiv.innerHTML = "Waiting for picker to pick spot...";
-  updateScoresUI(); updateRolePanels();
+  guesserStreetViewDiv.innerHTML="Waiting for picker to pick spot...";
+  if(guessMarker) guessMarker.setMap(null);
+  guesserMap.setCenter({lat:20,lng:0});
+  guesserMap.setZoom(2);
+  updateScoresUI();
+  updateRolePanels();
 });
 
 function updateLobbyUI() {
@@ -180,7 +209,7 @@ function updateLobbyUI() {
 }
 
 function updateScoresUI() {
-  scoresPre.textContent = JSON.stringify(scores, null, 2);
+  scoresPre.textContent = JSON.stringify(scores,null,2);
 }
 
 function updateRolePanels() {
