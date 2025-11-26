@@ -45,9 +45,8 @@
 
     <div class="panel" id="pickerPanel" style="display:none;">
       <h3>Picker — Choose a spot</h3>
-      <div>Use Street View to choose the hidden location.</div>
+      <div>Move the Street View to the location you want the guesser to see.</div>
       <div id="streetView" style="width:100%; height:250px; border-radius:8px; margin:8px 0;"></div>
-
       <input id="hintInput" placeholder="Optional hint (e.g. 'Near a famous river')" />
       <button id="submitPickBtn" disabled>Send Pick to Guesser</button>
     </div>
@@ -124,7 +123,7 @@
       guessMarker = null;
     }
 
-    // street view variables
+    // --- Google Street View ---
     let streetViewPanorama = null;
     let streetViewLatLng = null;
 
@@ -149,7 +148,7 @@
       });
     }
 
-    async function generateStreetViewImage(lat, lng) {
+    function generateStreetViewImage(lat, lng) {
       return `https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${lat},${lng}&key=${GOOGLE_API_KEY}`;
     }
 
@@ -179,9 +178,9 @@
       });
     };
 
-    submitPickBtn.onclick = async () => {
+    submitPickBtn.onclick = () => {
       if (!streetViewLatLng) return alert("Pick a Street View location first!");
-      const imageUrl = await generateStreetViewImage(streetViewLatLng.lat, streetViewLatLng.lng);
+      const imageUrl = generateStreetViewImage(streetViewLatLng.lat, streetViewLatLng.lng);
       socket.emit("pickLocation", {
         roomId: myRoomId,
         lat: streetViewLatLng.lat,
@@ -194,7 +193,6 @@
     map.on('click', (e) => {
       if (!myRoomId) return;
       if (currentPickerId !== mySocketId) {
-        // guesser chooses guess on map
         const guessLatLng = e.latlng;
         if (guessMarker) map.removeLayer(guessMarker);
         guessMarker = L.marker(guessLatLng).addTo(map);
@@ -278,7 +276,6 @@
         guesserPanel.style.display = 'none';
       }
     }
-
   </script>
 </body>
 </html>
