@@ -71,8 +71,8 @@ io.on('connection', (socket) => {
 
     const guesserId = room.players.find(id => id !== pickerId);
     io.to(guesserId).emit('startGuess', {
-      lat: data.lat,        // <-- added so guesser gets coordinates
-      lng: data.lng,        // <-- added so guesser gets coordinates
+      lat: data.lat,
+      lng: data.lng,
       hint: data.hint || null
     });
 
@@ -87,8 +87,18 @@ io.on('connection', (socket) => {
     const correct = room._current;
     const dist = haversineDistMeters(correct.lat, correct.lng, data.lat, data.lng);
 
-    const score = Math.max(0, Math.round(1000 * Math.max(0, (1 - dist / 500000))));
+    // ---- NEW SCORING SYSTEM ----
+    const miles = dist / 1609.34;
+    let score = 0;
+
+    if (miles <= 1) {
+      score = 1000;
+    } else {
+      score = Math.max(0, 1000 - Math.round(miles));
+    }
+
     room.scores[socket.id] = (room.scores[socket.id] || 0) + score;
+    // ----------------------------
 
     io.to(data.roomId).emit('roundResult', {
       correct: { lat: correct.lat, lng: correct.lng },
