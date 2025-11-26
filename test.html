@@ -2,157 +2,350 @@
 <html>
 <head>
 <meta charset="utf-8" />
-<title>SpotGuess Duel — Mobile Test</title>
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
-
+<title>SpotGuess Duel — Map + Multiplayer + Street View</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
 <style>
-  body { 
-    font-family: system-ui, Arial;
-    margin:0;
-    padding:0;
-    display:flex;
-    height:100vh;
-    overflow:hidden;
-  }
-
-  /* LEFT PANEL (sidebar) */
-  #left {
-    width: 360px;
-    min-width: 300px;
-    padding:12px;
-    box-sizing:border-box;
-    background:#f7f7f8;
-    overflow-y:auto;
-    border-right:1px solid #ddd;
-  }
-
-  /* MAP */
-  #map {
-    flex:1;
-    min-height:0;
-  }
-
-  /* Guess mode UI */
-  #guesserStreetView {
-    width:100%;
-    height:240px;
-    background:#ddd;
-    border-radius:8px;
-    margin-bottom:10px;
-  }
-
-  #guessMap {
-    width:100%;
-    height:260px;
-    margin-bottom:10px;
-  }
-
-  button {
-    padding:10px 14px;
-    width:100%;
-    margin:6px 0;
-    font-size:1rem;
-    border-radius:8px;
-  }
-
-  .panel {
-    background:white;
-    padding:12px;
-    border-radius:10px;
-    margin-bottom:14px;
-    box-shadow:0 2px 6px rgba(0,0,0,0.06);
-  }
-
-  input[type="text"] {
-    width:100%;
-    padding:10px;
-    box-sizing:border-box;
-    border-radius:6px;
-    margin-bottom:8px;
-    font-size:1rem;
-    border:1px solid #ccc;
-  }
-
-  .hint { font-size:0.85rem; color:#666; }
+  html,body { height:100%; margin:0; }
+  body { font-family: system-ui, Arial; margin:0; padding:0; display:flex; height:100vh; }
+  #left { width: 380px; padding:12px; box-sizing:border-box; background:#f7f7f8; overflow:auto; border-right:1px solid #ddd; }
+  #map { flex:1; min-height:0; margin-bottom:12px; height:100%; }
+  #guesserStreetView { width:100%; height:300px; border-radius:8px; background:#ddd; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#555; margin-bottom:8px; }
+  #guessMap { width:100%; height:300px; margin-bottom:8px; }
+  button { padding:8px 12px; margin:6px 0; width:100%; box-sizing:border-box; }
+  .panel { background:white; padding:10px; border-radius:8px; margin-bottom:12px; box-shadow:0 2px 6px rgba(0,0,0,0.05); }
+  input[type="text"], input[type="search"] { width:100%; padding:8px; box-sizing:border-box; margin-bottom:8px; }
+  .hint { font-size:0.9rem; color:#555; margin-top:6px; }
   .status { font-weight:600; margin-top:6px; }
-
-  /* MOBILE RESPONSIVE */
-  @media (max-width: 900px) {
-    body {
-      flex-direction:column;
-      height:auto;
-    }
-
-    #left {
-      width:100%;
-      height:auto;
-      border-right:none;
-      border-bottom:1px solid #ddd;
-    }
-
-    #map {
-      width:100%;
-      height:60vh;
-      order:2;
-    }
-  }
-
-  @media (max-width: 600px) {
-    #guesserStreetView { height:180px; }
-    #guessMap { height:200px; }
+  ul { padding-left:18px; margin:6px 0; }
+  /* Simple responsive behavior */
+  @media (max-width:900px){
+    body { flex-direction:column; }
+    #left { width:100%; border-right:none; border-bottom:1px solid #ddd; }
+    #map { height:60vh; order:2; }
   }
 </style>
 </head>
-
 <body>
+  <div id="left">
+    <h2>SpotGuess Duel</h2>
 
-<div id="left">
-  <h2>SpotGuess Duel (Mobile Test)</h2>
+    <div class="panel" id="lobbyControls">
+      <button id="createBtn">Create Room</button>
+      <input id="roomInput" placeholder="Enter Room Code (e.g. ABC123)" />
+      <button id="joinBtn">Join Room</button>
+      <div class="hint">Open the same room in another browser to play (2 players).</div>
+    </div>
 
-  <div class="panel" id="lobbyControls">
-    <button id="createBtn">Create Room</button>
-    <input id="roomInput" placeholder="Room Code (ABC123)" />
-    <button id="joinBtn">Join Room</button>
-    <div class="hint">Open the same room on another device to play.</div>
+    <div class="panel" id="roomPanel" style="display:none;">
+      <div>Room: <span id="roomIdSpan"></span></div>
+      <div>Players:
+        <ul id="playersList"></ul>
+      </div>
+      <div>Scores: <pre id="scoresPre" style="white-space:pre-wrap"></pre></div>
+      <div class="status" id="statusText">Waiting for players...</div>
+    </div>
+
+    <!-- Picker panel -->
+    <div class="panel" id="pickerPanel" style="display:none;">
+      <h3>Picker — Street View on Map</h3>
+      <p>Move Street View on the big map and click <b>Spot Chosen</b>.</p>
+      <input id="hintInput" placeholder="Optional hint (e.g. 'Near a famous river')" />
+      <button id="submitPickBtn" disabled>Spot Chosen</button>
+    </div>
+
+    <!-- Guesser panel -->
+    <div class="panel" id="guesserPanel" style="display:none;">
+      <h3>Guesser — Make your guess</h3>
+      <div id="guesserStreetView">Waiting for picker to pick spot...</div>
+      <div id="guessMap"></div>
+      <div id="guessResult" style="margin-top:6px; font-weight:600;"></div>
+      <button id="submitGuessBtn" disabled>Submit Guess</button>
+    </div>
+
+    <div class="panel" id="resultPanel" style="display:none;">
+      <h3>Round Result</h3>
+      <div id="resultText"></div>
+    </div>
   </div>
 
-  <div class="panel" id="roomPanel" style="display:none;">
-    <div>Room: <b id="roomIdSpan"></b></div>
-    <div>Players:<br><ul id="playersList"></ul></div>
-    <div>Scores:<pre id="scoresPre"></pre></div>
-    <div class="status" id="statusText">Waiting…</div>
-  </div>
+  <div id="map"></div> <!-- Picker map (large) -->
 
-  <div class="panel" id="pickerPanel" style="display:none;">
-    <h3>You are the Picker</h3>
-    <p>Move Street View on the map, then confirm.</p>
-    <input id="hintInput" placeholder="Optional hint..." />
-    <button id="submitPickBtn" disabled>Spot Chosen</button>
-  </div>
+  <!-- Google Maps JS API (loads and calls initMaps) -->
+  <script async
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCQHZHmpF-9_7jEixW8z_h_-zbImwnI3S0&callback=initMaps"></script>
 
-  <div class="panel" id="guesserPanel" style="display:none;">
-    <h3>You are the Guesser</h3>
-    <div id="guesserStreetView">Waiting...</div>
-    <div id="guessMap"></div>
-    <div id="guessResult"></div>
-    <button id="submitGuessBtn" disabled>Submit Guess</button>
-  </div>
+  <!-- Socket.IO client -->
+  <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 
-  <div class="panel" id="resultPanel" style="display:none;">
-    <h3>Round Result</h3>
-    <div id="resultText"></div>
-  </div>
-</div>
+  <script>
+  // ----- Configuration -----
+  // Use full origin including protocol for RailWay service
+  const SERVER_URL = "https://geo-production-f14c.up.railway.app"; // <-- ensure this is correct (https)
+  // -------------------------
 
-<div id="map"></div>
+  // open socket (explicit server URL so it works from static files)
+  const socket = io(SERVER_URL, { transports: ["websocket"], forceNew: true });
 
-<!-- MAPS + SOCKET -->
-<script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCQHZHmpF-9_7jEixW8z_h_-zbImwnI3S0&callback=initMaps"></script>
-<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  // DOM refs
+  const createBtn = document.getElementById('createBtn');
+  const joinBtn = document.getElementById('joinBtn');
+  const roomInput = document.getElementById('roomInput');
+  const roomPanel = document.getElementById('roomPanel');
+  const roomIdSpan = document.getElementById('roomIdSpan');
+  const playersList = document.getElementById('playersList');
+  const scoresPre = document.getElementById('scoresPre');
+  const statusText = document.getElementById('statusText');
+  const pickerPanel = document.getElementById('pickerPanel');
+  const guesserPanel = document.getElementById('guesserPanel');
+  const submitPickBtn = document.getElementById('submitPickBtn');
+  const submitGuessBtn = document.getElementById('submitGuessBtn');
+  const hintInput = document.getElementById('hintInput');
+  const resultPanel = document.getElementById('resultPanel');
+  const resultText = document.getElementById('resultText');
+  const guesserStreetViewDiv = document.getElementById('guesserStreetView');
+  const guessMapDiv = document.getElementById('guessMap');
+  const guessResultDiv = document.getElementById('guessResult');
 
-<script>
-/* your exact JS logic pasted here with no changes */
-</script>
+  // state
+  let myRoomId = null, mySocketId = null;
+  let players = [], scores = {}, currentPickerId = null;
+  let pickerMap, pickerStreetView, pickerLatLng = null;
+  let guessMap, guessMarker = null, guesserPanorama = null;
 
+  // defensive logging
+  socket.on("connect", () => {
+    mySocketId = socket.id;
+    console.log("socket connected:", mySocketId);
+  });
+  socket.on("connect_error", (err) => { console.error("socket connect_error", err); });
+  socket.on("error", (err) => console.error("socket error", err));
+
+  // ------------------ Maps initialization ------------------
+  // Called by Google Maps script via callback param
+  function initMaps() {
+    // Picker map (large)
+    pickerMap = new google.maps.Map(document.getElementById("map"), {
+      center: { lat: 20, lng: 0 },
+      zoom: 2,
+      streetViewControl: true
+    });
+
+    // Use the embedded StreetView panorama
+    pickerStreetView = pickerMap.getStreetView();
+    pickerStreetView.setVisible(true);
+
+    // when picker moves Street View, update local coordinate
+    pickerStreetView.addListener("position_changed", () => {
+      const pos = pickerStreetView.getPosition();
+      if (pos) {
+        pickerLatLng = { lat: pos.lat(), lng: pos.lng() };
+        // only enable button for the picker
+        if (currentPickerId === mySocketId) {
+          submitPickBtn.disabled = false;
+        }
+      }
+    });
+
+    // Guesser map (for placing guesses):
+    guessMap = new google.maps.Map(guessMapDiv, {
+      center: { lat: 20, lng: 0 },
+      zoom: 2,
+      streetViewControl: false
+    });
+
+    // click to place a guess marker
+    guessMap.addListener("click", (e) => {
+      // only allow guessing when not the picker and a room exists
+      if (!myRoomId || currentPickerId === mySocketId) return;
+      const latLng = { lat: e.latLng.lat(), lng: e.latLng.lng() };
+      if (guessMarker) guessMarker.setMap(null);
+      guessMarker = new google.maps.Marker({ position: latLng, map: guessMap });
+      submitGuessBtn.disabled = false;
+      guessResultDiv.innerHTML = "";
+
+      // attach submit action (keeps latest latLng closure)
+      submitGuessBtn.onclick = () => {
+        submitGuessBtn.disabled = true;
+        socket.emit('makeGuess', { roomId: myRoomId, lat: latLng.lat, lng: latLng.lng }, (res) => {
+          // server callback optional; we still wait for roundResult
+          console.log("makeGuess callback", res);
+        });
+      };
+    });
+
+    console.log("Maps initialized");
+  }
+
+  // Expose initMaps so Google can call it (callback param)
+  window.initMaps = initMaps;
+
+  // ------------------ UI actions ------------------
+  createBtn.onclick = () => {
+    // createRoom expects a callback
+    socket.emit('createRoom', (res) => {
+      console.log("createRoom response", res);
+      if (res && res.ok) {
+        myRoomId = res.roomId;
+        roomIdSpan.textContent = myRoomId;
+        roomPanel.style.display = '';
+        // hide lobby controls to avoid re-create
+        document.getElementById('lobbyControls').style.display = 'none';
+        statusText.textContent = "Waiting for another player to join...";
+      } else {
+        alert("Failed to create room");
+      }
+    });
+  };
+
+  joinBtn.onclick = () => {
+    const r = (roomInput.value || '').trim().toUpperCase();
+    if (!r) return alert("Enter a room code");
+    socket.emit('joinRoom', r, (res) => {
+      console.log("joinRoom res", res);
+      if (!res || !res.ok) return alert(res?.err || "Cannot join room");
+      myRoomId = r;
+      roomIdSpan.textContent = myRoomId;
+      roomPanel.style.display = '';
+      document.getElementById('lobbyControls').style.display = 'none';
+    });
+  };
+
+  submitPickBtn.onclick = () => {
+    if (!pickerLatLng) return alert("Move Street View to pick a spot!");
+    socket.emit('pickLocation', { roomId: myRoomId, lat: pickerLatLng.lat, lng: pickerLatLng.lng, hint: hintInput.value }, (res) => {
+      console.log("pickLocation ack", res);
+      // show that picker locked in
+      submitPickBtn.disabled = true;
+      submitPickBtn.textContent = "Spot Chosen";
+      statusText.textContent = "Pick sent — waiting for guesser...";
+    });
+  };
+
+  // ------------------ Socket events (lobby & game) ------------------
+  socket.on('roomJoined', (data) => {
+    console.log("roomJoined", data);
+    players = data.players || [];
+    scores = data.scores || {};
+    currentPickerId = data.pickerSocketId;
+    updateLobbyUI();
+    updateRolePanels();
+  });
+
+  socket.on('playerLeft', (d) => {
+    console.log("playerLeft", d);
+    statusText.textContent = "A player left. Waiting...";
+    players = players.filter(p => p !== d.socketId);
+    delete scores[d.socketId];
+    updateLobbyUI();
+    updateRolePanels();
+  });
+
+  // when picker picks, server notifies guesser with coordinates
+  socket.on('startGuess', (data) => {
+    console.log('startGuess', data);
+    // show guesser UI
+    guesserPanel.style.display = '';
+    pickerPanel.style.display = 'none';
+    statusText.textContent = "Make your guess…";
+    // create locked StreetView panorama for guesser
+    guesserStreetViewDiv.innerHTML = ""; // clear any previous
+    guesserPanorama = new google.maps.StreetViewPanorama(guesserStreetViewDiv, {
+      position: { lat: data.lat, lng: data.lng },
+      pov: { heading: 0, pitch: 0 },
+      zoom: 1,
+      disableDefaultUI: true,   // hide controls/address
+      clickToGo: false,
+      linksControl: false
+    });
+    // reset guessMap and markers
+    if (guessMarker) { guessMarker.setMap(null); guessMarker = null; }
+    guessMap.setCenter({ lat: 20, lng: 0 });
+    guessMap.setZoom(2);
+    guessResultDiv.innerHTML = "";
+    submitGuessBtn.disabled = true;
+  });
+
+  socket.on('roundResult', (res) => {
+    console.log('roundResult', res);
+    resultPanel.style.display = '';
+    resultText.innerHTML = `Distance: <b>${res.distanceMeters} m</b><br>Points: <b>${res.pointsAwarded}</b>`;
+    scores = res.scores || scores;
+    updateScoresUI();
+
+    // show actual location on guess map (so guesser sees correct spot)
+    if (res.correct && res.correct.lat != null && res.correct.lng != null) {
+      new google.maps.Marker({
+        position: { lat: res.correct.lat, lng: res.correct.lng },
+        map: guessMap,
+        icon: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png'
+      });
+    }
+
+    // keep guess marker visible if it exists
+    guessResultDiv.innerHTML = `Distance: <b>${res.distanceMeters} m</b> — Points: <b>${res.pointsAwarded}</b>`;
+  });
+
+  socket.on('newRound', (data) => {
+    console.log('newRound', data);
+    currentPickerId = data.pickerSocketId;
+    scores = data.scores || scores;
+    resultPanel.style.display = 'none';
+    // reset UI
+    guesserStreetViewDiv.innerHTML = "Waiting for picker to pick spot...";
+    guessResultDiv.innerHTML = "";
+    if (guessMarker) { guessMarker.setMap(null); guessMarker = null; }
+    guessMap.setCenter({ lat: 20, lng: 0 });
+    guessMap.setZoom(2);
+    submitPickBtn.disabled = true;
+    submitPickBtn.textContent = "Spot Chosen";
+    updateScoresUI();
+    updateRolePanels();
+  });
+
+  socket.on('playerLeft', () => {
+    // handled above but keep safe
+    updateRolePanels();
+  });
+
+  // ------------------ UI helpers ------------------
+  function updateLobbyUI() {
+    // render players as list items
+    playersList.innerHTML = players.map(p => `<li>${p === mySocketId ? "You" : p}${p === currentPickerId ? " (picker)" : ""}</li>`).join("");
+    updateScoresUI();
+  }
+
+  function updateScoresUI() {
+    scoresPre.textContent = JSON.stringify(scores, null, 2);
+  }
+
+  function updateRolePanels() {
+    if (!players || players.length < 2) {
+      pickerPanel.style.display = 'none';
+      guesserPanel.style.display = 'none';
+      statusText.textContent = "Waiting for another player…";
+      return;
+    }
+
+    if (currentPickerId === mySocketId) {
+      statusText.textContent = "You are the picker.";
+      pickerPanel.style.display = '';
+      guesserPanel.style.display = 'none';
+      // ensure picker can pick once StreetView is moved (submitPickBtn managed by position_changed)
+      // if map already had a pickerLatLng, enable it
+      if (pickerLatLng) submitPickBtn.disabled = false;
+    } else {
+      statusText.textContent = "You are the guesser.";
+      pickerPanel.style.display = 'none';
+      guesserPanel.style.display = '';
+      // show guess map and waiting placeholder until server sends startGuess
+      guesserStreetViewDiv.innerHTML = "Waiting for picker to pick spot...";
+      submitGuessBtn.disabled = true;
+    }
+  }
+
+  // expose some helpers for debugging in console
+  window.__spotguess = { socket, initMaps, updateRolePanels };
+
+  </script>
 </body>
 </html>
