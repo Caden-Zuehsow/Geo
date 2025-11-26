@@ -35,19 +35,16 @@
       <div class="status" id="statusText">Waiting for players...</div>
     </div>
 
-    <!-- Updated Picker Panel -->
     <div class="panel" id="pickerPanel" style="display:none;">
-      <h3>Picker</h3>
+      <h3>Picker — Street View on Map</h3>
+      <p>Use Pegman on the map to move around in Street View.</p>
       <input id="hintInput" placeholder="Optional hint (e.g. 'Near a famous river')" />
       <button id="submitPickBtn" disabled>Pick this spot</button>
     </div>
 
     <div class="panel" id="guesserPanel" style="display:none;">
       <h3>Guesser — Make your guess</h3>
-      <div id="shownImageWrap" style="display:none;">
-        <div>Image from picker:</div>
-        <img id="shownImage" class="preview">
-      </div>
+      <div id="guesserStreetView" style="width:100%; height:300px; border-radius:8px; margin-bottom:8px;"></div>
       Click the map to place your guess.
       <button id="submitGuessBtn" disabled>Submit Guess</button>
     </div>
@@ -85,8 +82,6 @@
     const hintInput = document.getElementById('hintInput');
     const resultPanel = document.getElementById('resultPanel');
     const resultText = document.getElementById('resultText');
-    const shownImageWrap = document.getElementById('shownImageWrap');
-    const shownImage = document.getElementById('shownImage');
 
     let myRoomId = null;
     let mySocketId = null;
@@ -96,6 +91,7 @@
 
     let map, pickerLatLng = null;
     let pickerMarker = null, guessMarker = null;
+    let guesserPanorama = null;
 
     function initMap() {
       map = new google.maps.Map(document.getElementById("map"), {
@@ -111,7 +107,6 @@
       streetView.addListener("position_changed", () => {
         const pos = streetView.getPosition();
         pickerLatLng = { lat: pos.lat(), lng: pos.lng() };
-        if(currentPickerId === mySocketId) submitPickBtn.disabled = true;
         if(currentPickerId === mySocketId) submitPickBtn.disabled = false;
       });
 
@@ -181,13 +176,29 @@
     });
 
     socket.on('startGuess', data => {
-      if(data.imageDataUrl){ shownImage.src=data.imageDataUrl; shownImageWrap.style.display=''; }
-      else shownImageWrap.style.display='none';
-      guesserPanel.style.display=''; pickerPanel.style.display='none';
+      guesserPanel.style.display = '';
+      pickerPanel.style.display = 'none';
       statusText.textContent = "Make your guess…";
 
       if(pickerMarker) pickerMarker.setMap(null);
       if(guessMarker) guessMarker.setMap(null);
+
+      // Initialize the Street View for the guesser
+      if(data.lat && data.lng){
+        const svOptions = {
+          position: { lat: data.lat, lng: data.lng },
+          pov: { heading: 0, pitch: 0 },
+          zoom: 1,
+          disableDefaultUI: true,
+          clickToGo: false,
+          linksControl: false,
+          panControl: true,
+        };
+        guesserPanorama = new google.maps.StreetViewPanorama(
+          document.getElementById('guesserStreetView'),
+          svOptions
+        );
+      }
     });
 
     socket.on('roundResult', res => {
@@ -221,7 +232,7 @@
     function updateRolePanels(){
       if(players.length<2){ pickerPanel.style.display='none'; guesserPanel.style.display='none'; statusText.textContent="Waiting for another player…"; return; }
       if(currentPickerId===mySocketId){ statusText.textContent="You are the picker."; pickerPanel.style.display=''; guesserPanel.style.display='none'; }
-      else { statusText.textContent="You are the guesser."; pickerPanel.style.display='none'; guesserPanel.style.display='none'; }
+      else { statusText.textContent="You are the guesser."; pickerPanel.style.display='none'; guesserPanel.style.display=''; }
     }
   </script>
 </body>
