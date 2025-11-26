@@ -9,7 +9,7 @@
   #left { width: 380px; padding:12px; box-sizing:border-box; background:#f7f7f8; overflow:auto; border-right:1px solid #ddd; }
   #map { flex:1; min-height:0; margin-bottom:12px; }
   #guesserStreetView { width:100%; height:300px; border-radius:8px; background:#ddd; display:flex; align-items:center; justify-content:center; font-weight:bold; color:#555; margin-bottom:8px; }
-  #guessMap { width:100%; height:300px; border-radius:8px; margin-bottom:8px; }
+  #guessMap { width:100%; height:300px; margin-bottom:8px; }
   button { padding:8px 12px; margin:6px 0; }
   .panel { background:white; padding:10px; border-radius:8px; margin-bottom:12px; box-shadow:0 2px 6px rgba(0,0,0,0.05); }
   input[type="text"] { width:100%; padding:8px; box-sizing:border-box; }
@@ -50,6 +50,7 @@
     <h3>Guesser — Make your guess</h3>
     <div id="guesserStreetView">Waiting for picker to pick spot...</div>
     <div id="guessMap"></div>
+    <div id="guessResult" style="margin-top:6px; font-weight:600;"></div>
     <button id="submitGuessBtn" disabled>Submit Guess</button>
   </div>
 
@@ -68,7 +69,7 @@
 const SERVER_URL = "geo-production-f14c.up.railway.app";
 const socket = io(SERVER_URL, { transports: ["websocket"] });
 
-// DOM references
+// DOM refs
 const createBtn = document.getElementById('createBtn');
 const joinBtn = document.getElementById('joinBtn');
 const roomInput = document.getElementById('roomInput');
@@ -86,14 +87,16 @@ const resultPanel = document.getElementById('resultPanel');
 const resultText = document.getElementById('resultText');
 const guesserStreetViewDiv = document.getElementById('guesserStreetView');
 const guessMapDiv = document.getElementById('guessMap');
+const guessResultDiv = document.getElementById('guessResult');
 
 let myRoomId = null, mySocketId = null;
 let players = [], scores = {}, currentPickerId = null;
 let pickerMap, pickerStreetView, pickerLatLng = null;
 let guessMap, guessMarker = null, guesserPanorama = null;
 
+// --- Maps ---
 function initMaps() {
-  // Picker map + Street View
+  // Picker map
   pickerMap = new google.maps.Map(document.getElementById("map"), {
     center: {lat:20,lng:0}, zoom:2, streetViewControl:true
   });
@@ -105,9 +108,28 @@ function initMaps() {
     pickerLatLng = {lat: pos.lat(), lng: pos.lng()};
     if(currentPickerId === mySocketId) submitPickBtn.disabled = false;
   });
+
+  // Guesser map (for placing guesses)
+  guessMap = new google.maps.Map(guessMapDiv, {
+    center:{lat:20,lng:0},
+    zoom:2
+  });
+
+  guessMap.addListener("click", e => {
+    if(currentPickerId === mySocketId) return;
+    const latLng = {lat:e.latLng.lat(), lng:e.latLng.lng()};
+    if(guessMarker) guessMarker.setMap(null);
+    guessMarker = new google.maps.Marker({position:latLng, map:guessMap});
+    submitGuessBtn.disabled = false;
+
+    submitGuessBtn.onclick = () => {
+      socket.emit('makeGuess', {roomId: myRoomId, lat: latLng.lat, lng: latLng.lng});
+      submitGuessBtn.disabled = true;
+    };
+  });
 }
 
-// Picker submits chosen spot
+// Picker submits spot
 submitPickBtn.onclick = () => {
   if(!pickerLatLng) return alert("Move Street View to pick a spot!");
   socket.emit('pickLocation', {roomId: myRoomId, lat: pickerLatLng.lat, lng: pickerLatLng.lng, hint: hintInput.value});
@@ -123,7 +145,7 @@ createBtn.onclick = () => {
     if(res.ok){
       myRoomId = res.roomId;
       roomIdSpan.textContent = myRoomId;
-      roomPanel.style.display=''; 
+      roomPanel.style.display='';
       document.getElementById('lobbyControls').style.display='none';
     }
   });
@@ -136,7 +158,7 @@ joinBtn.onclick = () => {
     if(!res.ok) return alert(res.err);
     myRoomId = r;
     roomIdSpan.textContent = myRoomId;
-    roomPanel.style.display=''; 
+    roomPanel.style.display='';
     document.getElementById('lobbyControls').style.display='none';
   });
 };
@@ -147,60 +169,54 @@ socket.on('roomJoined', data => {
   updateLobbyUI(); updateRolePanels();
 });
 
+// Start guess round
 socket.on('startGuess', data => {
-  guesserPanel.style.display=''; 
-  pickerPanel.style.display='none';
-  statusText.textContent = "Make your guess…";
+  guesserPanel.style.display=''; pickerPanel.style.display='none';
+  statusText.textContent="Make your guess…";
   guesserStreetViewDiv.innerHTML="";
 
-  // Locked Street View for preview
+  // Locked Street View
   guesserPanorama = new google.maps.StreetViewPanorama(guesserStreetViewDiv, {
-    position: {lat: data.lat, lng: data.lng},
-    pov: {heading:0, pitch:0},
+    position: {lat:data.lat,lng:data.lng},
+    pov: {heading:0,pitch:0},
     zoom:1,
     disableDefaultUI:true,
     clickToGo:false,
     linksControl:false
   });
 
-  // Initialize guessing map
-  guessMap = new google.maps.Map(guessMapDiv, {
-    center: {lat:20, lng:0},
-    zoom:2,
-    streetViewControl:false
-  });
-
-  guessMap.addListener('click', e => {
-    const latLng = {lat: e.latLng.lat(), lng: e.latLng.lng()};
-    if(guessMarker) guessMarker.setMap(null);
-    guessMarker = new google.maps.Marker({position: latLng, map: guessMap});
-    submitGuessBtn.disabled = false;
-
-    submitGuessBtn.onclick = () => {
-      socket.emit('makeGuess', {roomId: myRoomId, lat: latLng.lat, lng: latLng.lng});
-      submitGuessBtn.disabled = true;
-      statusText.textContent = "Waiting for round result…";
-    };
-  });
+  // Reset guess map
+  guessMap.setCenter({lat:20,lng:0}); guessMap.setZoom(2);
+  if(guessMarker) guessMarker.setMap(null);
+  guessResultDiv.innerHTML="";
 });
 
+// Round result
 socket.on('roundResult', res => {
   resultPanel.style.display='';
-  resultText.innerHTML = `Distance: <b>${res.distanceMeters} m</b><br>Points: <b>${res.pointsAwarded}</b>`;
+  resultText.innerHTML=`Distance: <b>${res.distanceMeters} m</b><br>Points: <b>${res.pointsAwarded}</b>`;
   scores = res.scores; updateScoresUI();
 
-  // Show correct location on guess map
-  new google.maps.Marker({position:{lat:res.correct.lat, lng:res.correct.lng}, map: guessMap, icon:'http://maps.google.com/mapfiles/ms/icons/green-dot.png'});
+  // Show actual location
+  new google.maps.Marker({
+    position: {lat: res.correct.lat, lng: res.correct.lng},
+    map: guessMap,
+    icon: 'http://maps.google.com/mapfiles/ms/icons/green-dot.png'
+  });
+
+  // Keep guess marker visible
+  guessResultDiv.innerHTML=`Distance: <b>${res.distanceMeters} m</b> — Points: <b>${res.pointsAwarded}</b>`;
 });
 
+// New round
 socket.on('newRound', data => {
   currentPickerId = data.pickerSocketId;
   scores = data.scores;
   resultPanel.style.display='none';
   guesserStreetViewDiv.innerHTML="Waiting for picker to pick spot...";
-  guessMarker?.setMap(null);
-  guessMap?.setCenter({lat:20,lng:0}); 
-  guessMap?.setZoom(2);
+  guessResultDiv.innerHTML="";
+  if(guessMarker) guessMarker.setMap(null);
+  guessMap.setCenter({lat:20,lng:0}); guessMap.setZoom(2);
   updateScoresUI(); updateRolePanels();
 });
 
@@ -210,26 +226,26 @@ function updateLobbyUI() {
 }
 
 function updateScoresUI() {
-  scoresPre.textContent = JSON.stringify(scores, null, 2);
+  scoresPre.textContent = JSON.stringify(scores,null,2);
 }
 
 function updateRolePanels() {
   if(players.length < 2){
-    pickerPanel.style.display='none';
-    guesserPanel.style.display='none';
+    pickerPanel.style.display='none'; guesserPanel.style.display='none';
     statusText.textContent="Waiting for another player…";
     return;
   }
   if(currentPickerId === mySocketId){
     statusText.textContent="You are the picker.";
-    pickerPanel.style.display='';
-    guesserPanel.style.display='none';
+    pickerPanel.style.display=''; guesserPanel.style.display='none';
   } else {
     statusText.textContent="You are the guesser.";
-    pickerPanel.style.display='none';
-    guesserPanel.style.display='';
+    pickerPanel.style.display='none'; guesserPanel.style.display='';
   }
 }
 </script>
+</body>
+</html>
+
 </body>
 </html>
