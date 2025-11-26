@@ -7,7 +7,7 @@
   <style>
     body { font-family: system-ui, Arial; margin:0; padding:0; display:flex; height:100vh; }
     #left { width: 380px; padding:12px; box-sizing:border-box; background:#f7f7f8; overflow:auto; border-right:1px solid #ddd; }
-    #map, #guesserStreetView { width: 100%; height: 300px; border-radius:8px; margin-top:8px; }
+    #map, #guesserStreetView, #guesserMap { width: 100%; height: 300px; border-radius:8px; margin-top:8px; }
     button { padding:8px 12px; margin:6px 0; }
     .panel { background:white; padding:10px; border-radius:8px; margin-bottom:12px; box-shadow:0 2px 6px rgba(0,0,0,0.05); }
     input[type="text"] { width:100%; padding:8px; box-sizing:border-box; }
@@ -39,6 +39,7 @@
       <p>Use Pegman on the map to move around in Street View.</p>
       <input id="hintInput" placeholder="Optional hint" />
       <button id="submitPickBtn" disabled>Pick this spot</button>
+      <button id="confirmPickBtn" style="display:none;">Spot Chosen</button>
     </div>
 
     <div class="panel" id="guesserPanel" style="display:none;">
@@ -61,7 +62,6 @@
 
   <script>
     const SERVER_URL = "geo-production-f14c.up.railway.app";
-    const GOOGLE_API_KEY = "AIzaSyCQHZHmpF-9_7jEixW8z_h_-zbImwnI3S0";
     const socket = io(SERVER_URL, { transports: ["websocket"] });
 
     const createBtn = document.getElementById('createBtn');
@@ -75,23 +75,23 @@
     const pickerPanel = document.getElementById('pickerPanel');
     const guesserPanel = document.getElementById('guesserPanel');
     const submitPickBtn = document.getElementById('submitPickBtn');
+    const confirmPickBtn = document.getElementById('confirmPickBtn');
     const submitGuessBtn = document.getElementById('submitGuessBtn');
     const hintInput = document.getElementById('hintInput');
     const resultPanel = document.getElementById('resultPanel');
     const resultText = document.getElementById('resultText');
 
     let myRoomId = null, mySocketId = null, players=[], scores={}, currentPickerId=null;
-    let map, pickerLatLng=null, pickerMarker=null, guessMarker=null;
-    let guesserMap, guesserPanorama;
+    let pickerLatLng=null, pickerMarker=null, guessMarker=null;
+    let map, guesserMap, guesserPanorama;
 
     function initMap() {
-      // Picker's Map with Street View
+      // Picker map with Street View
       map = new google.maps.Map(document.getElementById("map"), {
         center: { lat: 20, lng: 0 },
         zoom: 2,
         streetViewControl: true
       });
-
       const streetView = map.getStreetView();
       streetView.setVisible(true);
 
@@ -101,7 +101,7 @@
         if(currentPickerId === mySocketId) submitPickBtn.disabled = false;
       });
 
-      // Guesser map (no street view)
+      // Guesser map (separate map, no street view)
       guesserMap = new google.maps.Map(document.getElementById('guesserMap'), {
         center: { lat: 20, lng: 0 },
         zoom: 2,
@@ -123,14 +123,21 @@
       });
     }
 
+    // Picker chooses a spot
     submitPickBtn.onclick = () => {
       if(!pickerLatLng) return alert("Move Street View to a location first!");
+      confirmPickBtn.style.display = "inline-block";
+      submitPickBtn.disabled = true;
+    };
+
+    confirmPickBtn.onclick = () => {
       socket.emit("pickLocation", {
         roomId: myRoomId,
         lat: pickerLatLng.lat,
         lng: pickerLatLng.lng,
         hint: hintInput.value
       });
+      confirmPickBtn.style.display = "none";
     };
 
     socket.on('connect', ()=>{ mySocketId = socket.id; });
@@ -218,9 +225,17 @@
 
     function updateRolePanels(){
       if(players.length<2){ pickerPanel.style.display='none'; guesserPanel.style.display='none'; statusText.textContent="Waiting for another player…"; return; }
-      if(currentPickerId===mySocketId){ statusText.textContent="You are the picker."; pickerPanel.style.display=''; guesserPanel.style.display='none'; }
-      else { statusText.textContent="You are the guesser."; pickerPanel.style.display='none'; guesserPanel.style.display=''; }
+      if(currentPickerId===mySocketId){ 
+        statusText.textContent="You are the picker."; 
+        pickerPanel.style.display=''; 
+        guesserPanel.style.display='none'; 
+      } else { 
+        statusText.textContent="You are the guesser."; 
+        pickerPanel.style.display='none'; 
+        guesserPanel.style.display=''; 
+      }
     }
   </script>
 </body>
 </html>
+
