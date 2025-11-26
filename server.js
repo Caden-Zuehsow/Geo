@@ -71,7 +71,8 @@ io.on('connection', (socket) => {
 
     const guesserId = room.players.find(id => id !== pickerId);
     io.to(guesserId).emit('startGuess', {
-      imageDataUrl: data.imageDataUrl || null,
+      lat: data.lat,        // <-- added so guesser gets coordinates
+      lng: data.lng,        // <-- added so guesser gets coordinates
       hint: data.hint || null
     });
 
