@@ -63,8 +63,9 @@
 
   <div id="map"></div>
 
+  <!-- Google Maps JS API for Street View -->
   <script async
-    src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY_HERE&callback=initStreetView">
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBnsEvmHk5gFf5rOXtUqvg0scRdXPg8ed4&callback=initStreetView">
   </script>
 
   <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
@@ -124,6 +125,7 @@
       streetViewPanorama.addListener("position_changed", () => {
         const pos = streetViewPanorama.getPosition();
         pickerLatLng = { lat: pos.lat(), lng: pos.lng() };
+        submitPickBtn.disabled = false;
       });
     }
 
