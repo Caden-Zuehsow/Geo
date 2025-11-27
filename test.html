@@ -7,11 +7,14 @@
 <style>
     /* Mobile fix */
 @media (max-width: 768px) {
-  body {
-    display: block;
-    height: auto;
-    overflow-y: auto;
-  }
+body {
+  font-family: system-ui, Arial;
+  margin:0;
+  padding:0;
+  display:flex;
+  min-height:100vh; /* ✔ Use min-height instead, allows scrolling */
+}
+
 
   #left {
     width: 100%;
