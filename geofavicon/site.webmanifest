@@ -1,6 +1,6 @@
 {
-  "name": "MyWebSite",
-  "short_name": "MySite",
+  "name": "GeoBrawl",
+  "short_name": "GeoBrawl",
   "icons": [
     {
       "src": "/geofavicon/web-app-manifest-192x192.png",
@@ -15,7 +15,7 @@
       "purpose": "maskable"
     }
   ],
-  "theme_color": "#2a7e23",
-  "background_color": "#181e2d",
+  "theme_color": "#142955",
+  "background_color": "#142955",
   "display": "standalone"
 }
