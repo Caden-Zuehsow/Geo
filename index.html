@@ -1,43 +1,95 @@
 <!doctype html>
 <html>
 <head>
-<link rel="icon" type="image/png" href="/geofavicon/favicon-96x96.png" sizes="96x96" />
-<link rel="icon" type="image/svg+xml" href="/geofavicon/favicon.svg" />
-<link rel="shortcut icon" href="/geofavicon/favicon.ico" />
-<link rel="apple-touch-icon" sizes="180x180" href="/geofavicon/apple-touch-icon.png" />
-<link rel="manifest" href="/geofavicon/site.webmanifest" />
   <meta charset="utf-8">
   <title>GeoBrawl</title>
+
+  <!-- FAVICONS -->
+  <link rel="icon" type="image/png" href="/geofavicon/favicon-96x96.png" sizes="96x96" />
+  <link rel="icon" type="image/svg+xml" href="/geofavicon/favicon.svg" />
+  <link rel="shortcut icon" href="/geofavicon/favicon.ico" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/geofavicon/apple-touch-icon.png" />
+  <link rel="manifest" href="/geofavicon/site.webmanifest" />
+
   <meta name="viewport" content="width=device-width, initial-scale=1">
+
   <style>
+    :root {
+      --ocean: #4A90D6;
+      --land: #6BBE47;
+      --outline: #11284B;
+      --background: #f5f5f5;
+      --button: #0077ff;
+    }
+
     body {
-      font-family: system-ui, Arial;
-      background: #f5f5f5;
+      font-family: system-ui, Arial, sans-serif;
+      background: var(--background);
+      margin: 0;
       padding: 40px;
       text-align: center;
     }
+
+    #logo {
+      width: 200px;
+      height: auto;
+      margin-bottom: 20px;
+      filter: drop-shadow(0px 0px 10px rgba(0,0,0,0.35));
+    }
+
+    h1 {
+      margin: 0;
+      color: var(--outline);
+      font-size: 2.8rem;
+      font-weight: 700;
+    }
+
+    p {
+      color: #444;
+      font-size: 1.1rem;
+      margin-top: 10px;
+    }
+
     a.button {
-      background: #0077ff;
+      background: var(--button);
       color: white;
       padding: 14px 22px;
-      border-radius: 8px;
+      border-radius: 10px;
       text-decoration: none;
-      font-size: 1.2rem;
+      font-size: 1.3rem;
+      font-weight: 600;
       display: inline-block;
-      margin-top: 20px;
+      margin-top: 25px;
+      transition: 0.2s;
+    }
+
+    a.button:hover {
+      background: #005ad1;
+      transform: translateY(-2px);
+    }
+
+    footer {
+      margin-top: 60px;
+      color: #777;
+      font-size: 0.9rem;
     }
   </style>
 </head>
+
 <body>
 
-  <h1>SpotGuess Duel</h1>
-  <p>A simple multiplayer location-guessing game inspired by GeoGuessr.</p>
+  <!-- GAME LOGO -->
+  <img id="logo" src="/geofavicon/logo.png" alt="GeoBrawl Logo">
+
+  <h1>GeoBrawl</h1>
+  <p>A fast-paced, multiplayer location-guessing game inspired by GeoGuessr.</p>
 
   <a class="button" href="public/index.html">Play Now</a>
 
-  <p style="margin-top:50px;color:#666;font-size:0.9rem;">
-    Note: Multiplayer requires the external WebSocket server to be running.
-  </p>
+  <footer>
+    Multiplayer requires the GeoBrawl WebSocket server to be running.
+  </footer>
 
 </body>
 </html>
+
