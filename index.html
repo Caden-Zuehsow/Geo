@@ -18,8 +18,8 @@
       --ocean: #4A90D6;
       --land: #6BBE47;
       --outline: #11284B;
-      --background: #f5f5f5;
-      --button: #0077ff;
+      --background: #11284B;   /* NEW background */
+      --button: #4A90D6;       /* Lighter blue for better contrast */
     }
 
     body {
@@ -34,18 +34,18 @@
       width: 200px;
       height: auto;
       margin-bottom: 20px;
-      filter: drop-shadow(0px 0px 10px rgba(0,0,0,0.35));
+      filter: drop-shadow(0px 0px 14px rgba(0,0,0,0.4));
     }
 
     h1 {
       margin: 0;
-      color: var(--outline);
+      color: var(--ocean);   /* Lighter text for readability */
       font-size: 2.8rem;
       font-weight: 700;
     }
 
     p {
-      color: #444;
+      color: #E8E8E8;        /* Light gray text */
       font-size: 1.1rem;
       margin-top: 10px;
     }
@@ -64,13 +64,13 @@
     }
 
     a.button:hover {
-      background: #005ad1;
+      background: #2f6cb0;
       transform: translateY(-2px);
     }
 
     footer {
       margin-top: 60px;
-      color: #777;
+      color: #CFCFCF;
       font-size: 0.9rem;
     }
   </style>
@@ -78,7 +78,6 @@
 
 <body>
 
-  <!-- GAME LOGO -->
   <img id="logo" src="/geofavicon/logo.png" alt="GeoBrawl Logo">
 
   <h1>GeoBrawl</h1>
