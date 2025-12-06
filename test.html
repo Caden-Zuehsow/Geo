@@ -283,14 +283,13 @@ function isInsideUSA(lat, lng) {
    Maps initialization (real setup)
    ---------------------------- */
 function initMapsSetup() {
-  // Picker map used when someone is picking a spot (shows Street View control)
-  pickerMap = new google.maps.Map(document.getElementById("map"), {
-    center: { lat: 39.8283, lng: -98.5795 }, // rough center of contiguous USA
-    zoom: 4,
-    streetViewControl: true,
-    gestureHandling: "greedy"   // <— This enables scroll-to-zoom
-  });
-}
+pickerMap = new google.maps.Map(document.getElementById("map"), {
+  center:{lat:40,lng:-99},
+  zoom:2,
+  streetViewControl:true,
+  gestureHandling: "greedy"
+});
+
 
   pickerStreetView = pickerMap.getStreetView();
   pickerStreetView.setVisible(true);
