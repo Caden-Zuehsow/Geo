@@ -330,8 +330,9 @@ pickerMap = new google.maps.Map(document.getElementById("map"), {
 
   // Guess map (where guesser places a marker)
   guessMap = new google.maps.Map(guessMapDiv, {
-    center: { lat: 39.8283, lng: -98.5795 },
-    zoom: 4
+    center: { lat:40, lng:-99 },
+    zoom: 4,
+    gestureHandling: "greedy"
   });
 
   // Clicking on guessMap selects a guess — but only allow USA positions
