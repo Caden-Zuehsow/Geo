@@ -264,7 +264,12 @@ pickerMap = new google.maps.Map(document.getElementById("map"), {
   });
 
   // Guess map
-  guessMap = new google.maps.Map(guessMapDiv, { center:{lat:20,lng:0}, zoom:2 });
+guessMap = new google.maps.Map(guessMapDiv, {
+  center:{lat:20,lng:0},
+  zoom:2,
+  gestureHandling: "greedy"
+});
+
 
   guessMap.addListener("click", e => {
     if(currentPickerId === mySocketId) return;
