@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta name="google-site-verification" content="zlRoSm0P28SPt63y0ubSnjR1RQ8qEANkcTBwHDqgtz0" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="/favicon/favicon-96x96.png" sizes="96x96" />
+  <link rel="icon" type="image/svg+xml" href="/favicon/favicon.svg" />
+  <link rel="shortcut icon" href="/favicon/favicon.ico" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
+  <link rel="manifest" href="/favicon/site.webmanifest" />
+  <title>Cardinal Mechanical</title>
+  <style>
+    :root {
+      --primary: #7E0809; /* Deep Cardinal Red */
+      --black: #000000; /* Black */
+      --off-white: #FDFCFC; /* Off-White */
+      --accent-light: #BFA5A6; /* Light Grayish Red */
+      --muted-gray: #785657; /* Muted Brownish Gray */
+    }
+ 
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--off-white);
+      color: var(--muted-gray);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    header {
+      background: var(--primary);
+      color: var(--off-white);
+      padding: 1rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .logo-title {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      text-decoration: none;
+      color: var(--off-white);
+    }
+
+    .logo-title:hover {
+      color: var(--accent-light);
+    }
+
+    .logo-title img {
+      height: 50px;
+      width: auto;
+    }
+
+    header h1 {
+      margin: 0;
+      font-size: 1.5rem;
+    }
+
+    nav a {
+      margin-left: 1rem;
+      color: var(--off-white);
+      text-decoration: none;
+      font-weight: bold;
+    }
+
+    nav a:hover {
+      color: var(--accent-light);
+    }
+
+    .hero {
+      background: var(--off-white);
+      padding: 4rem 2rem;
+      text-align: center;
+    }
+
+    .hero h2 {
+      font-size: 2.5rem;
+      margin-bottom: 1rem;
+      color: var(--primary);
+    }
+
+    /* ✅ Updated Hero Logo Styling */
+    .hero-logo {
+      width: 400px; /* Larger logo */
+      max-width: 90%;
+      height: auto;
+      margin-bottom: 1.5rem;
+      user-select: none;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.25));
+      border: none;
+      outline: none;
+      background: transparent;
+      display: block;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .products {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1.5rem;
+      padding: 2rem;
+      flex: 1;
+    }
+
+    .product-card {
+      background: var(--off-white);
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      padding: 2rem;
+      text-align: center;
+      border: 1px solid var(--accent-light);
+      transition: transform 0.2s ease;
+    }
+
+    .product-card:hover {
+      transform: translateY(-3px);
+    }
+
+    .product-card h3 {
+      margin: 0 0 1rem;
+      color: var(--primary);
+    }
+
+    .product-card p {
+      font-size: 0.9rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 0.6rem 1.2rem;
+      border-radius: 5px;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      background: var(--primary);
+      color: var(--off-white);
+      text-decoration: none;
+    }
+
+    .btn:hover {
+      background: var(--muted-gray);
+    }
+
+    .cta {
+      text-align: center;
+      padding: 3rem 2rem;
+      background: var(--accent-light);
+      margin: 2rem;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    }
+
+    .cta h2 {
+      color: var(--primary);
+    }
+
+    footer {
+      text-align: center;
+      padding: 1rem;
+      background: var(--primary);
+      color: var(--off-white);
+      margin-top: auto;
+    }
+
+    /* ✅ Mobile Optimization for iPhone and small screens */
+    @media (max-width: 600px) {
+      header {
+        flex-direction: column;
+        text-align: center;
+      }
+
+      nav {
+        margin-top: 0.5rem;
+      }
+
+      nav a {
+        display: inline-block;
+        margin: 0.5rem;
+      }
+
+      .products {
+        grid-template-columns: 1fr; /* One card per row on iPhone */
+      }
+
+      .hero-logo {
+        width: 90%; /* Make logo fill more space on mobile */
+      }
+
+      .hero h2 {
+        font-size: 2rem;
+      }
+    }
+  </style>
+</head>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-RT37FCWEF9"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-RT37FCWEF9');
+</script>
+
+<body>
+  <header>
+    <a href="/" class="logo-title">
+      <img src="/logo.png" alt="Cardinal Mechanical Logo">
+      <h1>Cardinal Mechanical</h1>
+    </a>
+    <nav>
+      <a href="/">Home</a>
+      <a href="plumbing/">Plumbing</a>
+      <a href="hvac/">HVAC</a>
+      <a href="/about-us/">About</a>
+      <a href="freequote/">Free Quote</a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <img src="/Tranparent-Cardinal-Logo.png" alt="Cardinal Mechanical Logo" class="hero-logo">
+    <h2>Welcome to Cardinal Mechanical</h2>
+    <p>Integrity is Our Standard</p>
+  </section>
+
+  <section class="products">
+    <div class="product-card">
+      <h3>Plumbing Services</h3>
+      <p>Expert plumbing installation, repairs, and maintenance for your home or business.</p>
+      <a href="plumbing/index.html" class="btn">Learn More</a>
+    </div>
+    <div class="product-card">
+      <h3>HVAC Services</h3>
+      <p>Reliable heating and cooling solutions to keep you comfortable year-round.</p>
+      <a href="hvac/index.html" class="btn">Learn More</a>
+    </div>
+    <div class="product-card">
+      <h3>Get a Quote Today!</h3>
+      <p>Just click here to request your free quote.</p>
+      <a href="freequote/" class="btn">Get a Free Quote</a>
+    </div>
+    <div class="product-card">
+      <h3>Maintenance Plans</h3>
+      <p>Keep your systems running smoothly with affordable maintenance packages.</p>
+      <a href="freequote/" class="btn">View Plans</a>
+    </div>
+  </section>
+
+  <section class="cta">
+    <h2>Need Service Today?</h2>
+    <p>Get a free quote for plumbing or HVAC work from Cardinal Mechanical.</p>
+    <a href="freequote/" class="btn">Get a Quote</a>
+  </section>
+
+  <footer>
+    <p>&copy; 2025 Cardinal Mechanical. All rights reserved.</p>
+  </footer>
+</body>
+</html>
