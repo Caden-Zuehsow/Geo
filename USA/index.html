@@ -215,12 +215,15 @@
 
 <!-- ALL YOUR ORIGINAL JS (unchanged) -->
 <script>
-/* ------- Your JavaScript is unchanged except for layout ------- */
+/* ================================
+   GeoBrawl — Full JS Replacement
+   USA-only picker AND USA-only guesser
+   ================================ */
 
 const SERVER_URL = "geo-production-f14c.up.railway.app";
 const socket = io(SERVER_URL, { transports: ["websocket"] });
 
-// DOM references
+// DOM references (kept same names to match your HTML)
 const createBtn = document.getElementById('createBtn');
 const joinBtn = document.getElementById('joinBtn');
 const roomInput = document.getElementById('roomInput');
@@ -240,154 +243,347 @@ const guesserStreetViewDiv = document.getElementById('guesserStreetView');
 const guessMapDiv = document.getElementById('guessMap');
 const guessResultDiv = document.getElementById('guessResult');
 
-let myRoomId=null, mySocketId=null;
-let players=[], scores={}, currentPickerId=null;
-let pickerMap, pickerStreetView, pickerLatLng=null;
-let guessMap, guessMarker=null, guesserPanorama=null;
+// Game state
+let myRoomId = null;
+let mySocketId = null;
+let players = [];
+let scores = {};
+let currentPickerId = null;
 
-// Init maps with new DOM structure
+// Maps / StreetView state
+let pickerMap = null;
+let pickerStreetView = null;
+let pickerLatLng = null;
+
+let guessMap = null;
+let guessMarker = null;
+let guesserPanorama = null;
+
+// USA bounding box (approximate continental USA bounds)
+const USA_BOUNDS = {
+  minLat: 24.396308,   // southern Florida
+  maxLat: 49.384358,   // northern border
+  minLng: -124.848974, // west coast
+  maxLng: -66.885444   // east coast
+};
+
+function isInsideUSA(lat, lng) {
+  if (typeof lat !== 'number' || typeof lng !== 'number') return false;
+  return (
+    lat >= USA_BOUNDS.minLat &&
+    lat <= USA_BOUNDS.maxLat &&
+    lng >= USA_BOUNDS.minLng &&
+    lng <= USA_BOUNDS.maxLng
+  );
+}
+
+/* ----------------------------
+   Maps initialization
+   ---------------------------- */
 function initMaps() {
+  // Picker map used when someone is picking a spot (shows Street View control)
   pickerMap = new google.maps.Map(document.getElementById("map"), {
-    center:{lat:20,lng:0}, zoom:2, streetViewControl:true
+    center: { lat: 39.8283, lng: -98.5795 }, // rough center of contiguous USA
+    zoom: 4,
+    streetViewControl: true
   });
+
   pickerStreetView = pickerMap.getStreetView();
   pickerStreetView.setVisible(true);
 
+  // Listen to position changes and enforce USA bounds
   pickerStreetView.addListener("position_changed", () => {
     const pos = pickerStreetView.getPosition();
-    pickerLatLng = { lat: pos.lat(), lng: pos.lng() };
-    if(currentPickerId === mySocketId) submitPickBtn.disabled = false;
+    if (!pos) {
+      // No position yet
+      pickerLatLng = null;
+      submitPickBtn.disabled = true;
+      return;
+    }
+
+    const lat = pos.lat();
+    const lng = pos.lng();
+
+    // If not inside USA, disable submission and show message
+    if (!isInsideUSA(lat, lng)) {
+      pickerLatLng = null;
+      submitPickBtn.disabled = true;
+      submitPickBtn.textContent = "Pick a location INSIDE the USA";
+      submitPickBtn.style.background = "#944"; // visual cue
+      return;
+    }
+
+    // Valid USA position
+    pickerLatLng = { lat, lng };
+
+    // Only enable if current player is the picker
+    if (currentPickerId === mySocketId) {
+      submitPickBtn.disabled = false;
+    }
+
+    submitPickBtn.textContent = "Spot Chosen";
+    submitPickBtn.style.background = ""; // reset styling
   });
 
-  // Guess map
-  guessMap = new google.maps.Map(guessMapDiv, { center:{lat:20,lng:0}, zoom:2 });
+  // Guess map (where guesser places a marker)
+  guessMap = new google.maps.Map(guessMapDiv, {
+    center: { lat: 39.8283, lng: -98.5795 },
+    zoom: 4
+  });
 
+  // Clicking on guessMap selects a guess — but only allow USA positions
   guessMap.addListener("click", e => {
-    if(currentPickerId === mySocketId) return;
-    const latLng = { lat:e.latLng.lat(), lng:e.latLng.lng() };
+    // If the user is the picker, ignore clicks
+    if (currentPickerId === mySocketId) return;
 
-    if(guessMarker) guessMarker.setMap(null);
-    guessMarker = new google.maps.Marker({ position:latLng, map:guessMap });
+    const lat = e.latLng.lat();
+    const lng = e.latLng.lng();
 
+    // Enforce USA-only guesses
+    if (!isInsideUSA(lat, lng)) {
+      // Provide a visible message and do not place marker
+      alert("Guesses must be inside the USA. Click somewhere within the continental United States.");
+      return;
+    }
+
+    // Place or move marker
+    if (guessMarker) guessMarker.setMap(null);
+    guessMarker = new google.maps.Marker({
+      position: { lat, lng },
+      map: guessMap
+    });
+
+    // Enable submit guess button
     submitGuessBtn.disabled = false;
+
+    // Set onclick to emit guess
     submitGuessBtn.onclick = () => {
-      socket.emit("makeGuess",{roomId:myRoomId,lat:latLng.lat,lng:latLng.lng});
+      // Defensive check: ensure marker exists and inside USA
+      if (!guessMarker) return;
+      const p = guessMarker.getPosition();
+      if (!isInsideUSA(p.lat(), p.lng())) {
+        alert("Your guess must be inside the USA.");
+        return;
+      }
+      socket.emit("makeGuess", { roomId: myRoomId, lat: p.lat(), lng: p.lng() });
       submitGuessBtn.disabled = true;
     };
   });
 }
 
+/* ----------------------------
+   Pick submission (picker)
+   ---------------------------- */
 submitPickBtn.onclick = () => {
-  if(!pickerLatLng) return alert("Move Street View to pick a spot!");
-  socket.emit("pickLocation",{roomId:myRoomId,lat:pickerLatLng.lat,lng:pickerLatLng.lng,hint:hintInput.value});
+  if (!pickerLatLng) {
+    alert("Move Street View inside the USA to pick a spot!");
+    return;
+  }
+
+  if (!isInsideUSA(pickerLatLng.lat, pickerLatLng.lng)) {
+    alert("Your Street View location must be inside the USA.");
+    return;
+  }
+
+  socket.emit("pickLocation", {
+    roomId: myRoomId,
+    lat: pickerLatLng.lat,
+    lng: pickerLatLng.lng,
+    hint: hintInput.value
+  });
+
   submitPickBtn.disabled = true;
-  submitPickBtn.textContent="Spot Chosen";
+  submitPickBtn.textContent = "Spot Chosen";
 };
 
-// Remaining socket logic kept exactly the same…
-socket.on("connect",()=>mySocketId=socket.id);
+/* ----------------------------
+   Socket events & UI actions
+   ---------------------------- */
 
+// Connect
+socket.on("connect", () => {
+  mySocketId = socket.id;
+});
+
+// Create room
 createBtn.onclick = () => {
-  socket.emit("createRoom",res=>{
-    if(res.ok){
-      myRoomId=res.roomId;
-      roomIdSpan.textContent=myRoomId;
-      roomPanel.style.display="";
-      document.getElementById("lobbyControls").style.display="none";
+  socket.emit("createRoom", res => {
+    if (res && res.ok) {
+      myRoomId = res.roomId || res.room;
+      roomIdSpan.textContent = myRoomId;
+      roomPanel.style.display = "";
+      document.getElementById("lobbyControls").style.display = "none";
+    } else if (res && res.err) {
+      alert("Create room error: " + res.err);
     }
   });
 };
 
+// Join room
 joinBtn.onclick = () => {
   const r = roomInput.value.trim().toUpperCase();
-  if(!r) return alert("Enter a room code");
-  socket.emit("joinRoom",r,res=>{
-    if(!res.ok) return alert(res.err);
-    myRoomId=r;
-    roomIdSpan.textContent=myRoomId;
-    roomPanel.style.display="";
-    document.getElementById("lobbyControls").style.display="none";
+  if (!r) return alert("Enter a room code");
+  socket.emit("joinRoom", r, res => {
+    if (!res || !res.ok) return alert(res ? res.err : "Failed to join room");
+    myRoomId = r;
+    roomIdSpan.textContent = myRoomId;
+    roomPanel.style.display = "";
+    document.getElementById("lobbyControls").style.display = "none";
   });
 };
 
-socket.on("roomJoined",data=>{
-  players=data.players; scores=data.scores; currentPickerId=data.pickerSocketId;
-  updateLobbyUI(); updateRolePanels();
+// When room joined/updated
+socket.on("roomJoined", data => {
+  if (!data) return;
+  players = data.players || players;
+  scores = data.scores || scores;
+  currentPickerId = data.pickerSocketId || currentPickerId;
+  updateLobbyUI();
+  updateRolePanels();
 });
 
-socket.on("startGuess",data=>{
-  guesserPanel.style.display="";
-  pickerPanel.style.display="none";
-  statusText.textContent="Make your guess…";
-  guesserStreetViewDiv.innerHTML="";
+// When a round starts: show guesser Street View for the guesser
+socket.on("startGuess", data => {
+  guesserPanel.style.display = "";
+  pickerPanel.style.display = "none";
+  statusText.textContent = "Make your guess…";
+  guesserStreetViewDiv.innerHTML = "";
 
-  guesserPanorama = new google.maps.StreetViewPanorama(guesserStreetViewDiv,{
-    position:{lat:data.lat,lng:data.lng},
-    pov:{heading:0,pitch:0},
-    zoom:1,
-    disableDefaultUI:true,
-    clickToGo:false,
-    linksControl:false
+  // Create a StreetView panorama for the guesser to view the chosen spot
+  guesserPanorama = new google.maps.StreetViewPanorama(guesserStreetViewDiv, {
+    position: { lat: data.lat, lng: data.lng },
+    pov: { heading: 0, pitch: 0 },
+    zoom: 1,
+    disableDefaultUI: true,
+    clickToGo: false,
+    linksControl: false
   });
 
-  guessMap.setCenter({lat:20,lng:0});
-  guessMap.setZoom(2);
-  if(guessMarker) guessMarker.setMap(null);
-  guessResultDiv.innerHTML="";
+  // Reset guess map view and markers
+  guessMap.setCenter({ lat: 39.8283, lng: -98.5795 });
+  guessMap.setZoom(4);
+  if (guessMarker) {
+    guessMarker.setMap(null);
+    guessMarker = null;
+  }
+  guessResultDiv.innerHTML = "";
+  submitGuessBtn.disabled = true;
 });
 
-socket.on("roundResult",res=>{
-  resultPanel.style.display="";
-  resultText.innerHTML=`Distance: <b>${res.distanceMeters} m</b><br>Points: <b>${res.pointsAwarded}</b>`;
-  scores=res.scores; updateScoresUI();
+// When round result arrives
+socket.on("roundResult", res => {
+  resultPanel.style.display = "";
+  resultText.innerHTML = `Distance: <b>${res.distanceMeters} m</b><br>Points: <b>${res.pointsAwarded}</b>`;
+  scores = res.scores || scores;
+  updateScoresUI();
 
+  // Mark correct spot on guessMap
   new google.maps.Marker({
-    position:{lat:res.correct.lat,lng:res.correct.lng},
-    map:guessMap,
-    icon:"http://maps.google.com/mapfiles/ms/icons/green-dot.png"
+    position: { lat: res.correct.lat, lng: res.correct.lng },
+    map: guessMap,
+    icon: "http://maps.google.com/mapfiles/ms/icons/green-dot.png"
   });
 
-  guessResultDiv.innerHTML=`Distance: <b>${res.distanceMeters} m</b> — Points: <b>${res.pointsAwarded}</b>`;
+  guessResultDiv.innerHTML = `Distance: <b>${res.distanceMeters} m</b> — Points: <b>${res.pointsAwarded}</b>`;
 });
 
-socket.on("newRound",data=>{
-  currentPickerId=data.pickerSocketId;
-  scores=data.scores;
-  resultPanel.style.display="none";
-  guesserStreetViewDiv.innerHTML="Waiting for picker to pick spot...";
-  guessResultDiv.innerHTML="";
-  if(guessMarker) guessMarker.setMap(null);
-  guessMap.setCenter({lat:20,lng:0}); guessMap.setZoom(2);
-  updateScoresUI(); updateRolePanels();
+// New round event (reset UI)
+socket.on("newRound", data => {
+  currentPickerId = data.pickerSocketId;
+  scores = data.scores || scores;
+  resultPanel.style.display = "none";
+  guesserStreetViewDiv.innerHTML = "Waiting for picker to pick spot...";
+  guessResultDiv.innerHTML = "";
+  if (guessMarker) {
+    guessMarker.setMap(null);
+    guessMarker = null;
+  }
+  guessMap.setCenter({ lat: 39.8283, lng: -98.5795 });
+  guessMap.setZoom(4);
+  updateScoresUI();
+  updateRolePanels();
 });
 
+/* ----------------------------
+   UI helpers
+   ---------------------------- */
 function updateLobbyUI() {
-  playersList.innerHTML = players.map(p => p===mySocketId?"You":p).join("");
+  // Show readable player list: convert socket ids to "You" when matching
+  playersList.innerHTML = "";
+  (players || []).forEach(p => {
+    const li = document.createElement('li');
+    li.textContent = (p === mySocketId) ? "You" : p;
+    playersList.appendChild(li);
+  });
   updateScoresUI();
 }
 
 function updateScoresUI() {
-  scoresPre.textContent = JSON.stringify(scores,null,2);
+  scoresPre.textContent = JSON.stringify(scores, null, 2);
 }
 
 function updateRolePanels() {
-  if(players.length<2){
-    pickerPanel.style.display="none";
-    guesserPanel.style.display="none";
-    statusText.textContent="Waiting for another player…";
+  // Hide panels if fewer than 2 players
+  if (!players || players.length < 2) {
+    pickerPanel.style.display = "none";
+    guesserPanel.style.display = "none";
+    statusText.textContent = "Waiting for another player…";
     return;
   }
-  if(currentPickerId===mySocketId){
-    statusText.textContent="You are the picker.";
-    pickerPanel.style.display="";
-    guesserPanel.style.display="none";
+
+  // If current player is the picker
+  if (currentPickerId === mySocketId) {
+    statusText.textContent = "You are the picker.";
+    pickerPanel.style.display = "";
+    guesserPanel.style.display = "none";
+
+    // If pickerStreetView's position is inside USA, enable button
+    if (pickerLatLng && isInsideUSA(pickerLatLng.lat, pickerLatLng.lng)) {
+      submitPickBtn.disabled = false;
+      submitPickBtn.textContent = "Spot Chosen";
+      submitPickBtn.style.background = "";
+    } else {
+      submitPickBtn.disabled = true;
+      submitPickBtn.textContent = "Pick a location INSIDE the USA";
+      submitPickBtn.style.background = "#944";
+    }
   } else {
-    statusText.textContent="You are the guesser.";
-    pickerPanel.style.display="none";
-    guesserPanel.style.display="";
+    statusText.textContent = "You are the guesser.";
+    pickerPanel.style.display = "none";
+    guesserPanel.style.display = "";
+    submitGuessBtn.disabled = true;
   }
 }
+
+/* ----------------------------
+   Initialize maps when API calls callback
+   ---------------------------- */
+// The maps API will call window.initMaps if that's what's specified in your script tag callback
+function initMaps() {
+  try {
+    initMapsInternal();
+  } catch (e) {
+    // In case of error, attempt to continue gracefully
+    console.error("initMaps error:", e);
+  }
+}
+
+// We keep the map creation in a separate function name to avoid callback confusion
+function initMapsInternal() {
+  initMaps(); // this will actually call the function defined earlier at top-level for maps
+}
+
+/* ----------------------------
+   Defensive: handle connection errors
+   ---------------------------- */
+socket.on("connect_error", (err) => {
+  console.warn("Socket connect_error:", err);
+});
+socket.on("disconnect", (reason) => {
+  console.warn("Socket disconnected:", reason);
+});
 </script>
+
 
 
 </body>
