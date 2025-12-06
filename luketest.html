@@ -1,168 +1,209 @@
- <!doctype html>
+<!doctype html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <title>GeoBrawl</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>GeoBrawl — Modes</title>
 
   <style>
-    :root {
+    :root{
       --ocean: #4A90D6;
-      --land: #6BBE47;
+      --land:  #6BBE47; /* Continent Green requested */
       --outline: #11284B;
       --background: #11284B;
       --button: #4A90D6;
     }
 
-    body {
+    /* Page layout */
+    body{
       font-family: system-ui, Arial, sans-serif;
       background: var(--background);
       margin: 0;
-      padding: 40px;
+      padding: 36px;
+      color: #E8E8E8;
       text-align: center;
     }
 
-    #logo {
-      width: 200px;
-      height: auto;
-      margin-bottom: 20px;
-      filter: drop-shadow(0px 0px 14px rgba(0,0,0,0.4));
-    }
+    #logo{ width: 180px; filter: drop-shadow(0 6px 14px rgba(0,0,0,0.45)); }
 
-    h1 {
-      margin: 0;
-      color: var(--ocean);
-      font-size: 2.8rem;
-      font-weight: 700;
-    }
+    h1{ color: var(--ocean); font-size: 2.4rem; margin: 6px 0; }
+    p{ color: #E8E8E8; margin-top: 6px; }
 
-    p {
-      color: #E8E8E8;
-      font-size: 1.1rem;
-      margin-top: 10px;
-    }
-
-    a.button {
+    .cta {
+      display:inline-block;
+      margin:18px 0;
       background: var(--button);
-      color: white;
-      padding: 14px 22px;
-      border-radius: 10px;
-      text-decoration: none;
-      font-size: 1.3rem;
-      font-weight: 600;
-      display: inline-block;
-      margin-top: 25px;
-      transition: 0.2s;
+      color:#fff;
+      padding:12px 20px;
+      border-radius:10px;
+      text-decoration:none;
+      font-weight:700;
     }
 
-    a.button:hover {
-      background: #2f6cb0;
-      transform: translateY(-2px);
-    }
-
-    .modes {
-      margin-top: 40px;
-      display: grid;
+    /* Modes grid: desktop 4 columns */
+    .modes{
+      margin-top:30px;
+      display:grid;
       grid-template-columns: repeat(4, 1fr);
-      gap: 20px;
-      padding: 0 20px;
+      gap:18px;
+      padding: 0 12px;
+      max-width: 980px;
+      margin-left:auto;
+      margin-right:auto;
     }
 
-    .mode-btn {
-      background: #3e7ac3;
-      color: white;
-      padding: 14px;
-      border-radius: 10px;
-      text-decoration: none;
-      font-size: 1.2rem;
-      font-weight: 600;
-      display: block;
-      transition: 0.2s;
+    .mode-btn{
+      background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.04));
+      padding:14px;
+      border-radius:12px;
+      text-decoration:none;
+      color:#fff;
+      font-weight:700;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:10px;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+      transition: transform .14s ease, box-shadow .14s ease;
+    }
+    .mode-btn:hover{ transform: translateY(-6px); box-shadow: 0 14px 36px rgba(0,0,0,0.45); }
+
+    /* SVG icon / image styling */
+    .mode-icon{
+      width:82px;
+      height:82px;
+      display:block;
+      border-radius:50%;
+      padding:8px; /* space inside circular container */
+      background: radial-gradient(circle at 30% 25%, rgba(255,255,255,0.03), transparent 25%);
+      box-shadow: inset 0 -6px 10px rgba(0,0,0,0.25);
     }
 
-    .mode-btn:hover {
-      background: #2d5d95;
-      transform: translateY(-3px);
+    /* If using inline SVG, make the land fill come from the CSS variable */
+    .mode-icon svg .land { fill: var(--land); stroke: rgba(0,0,0,0.35); stroke-width: 4px; }
+
+    /* PNG fallback tinting - not perfect but can help make non-SVG logos match */
+    .mode-img-png{
+      width:72px;
+      height:72px;
+      object-fit:contain;
+      filter: saturate(0) brightness(0.9) contrast(1.05); /* turn into grayscale-ish base */
+      mix-blend-mode: multiply;
+      background-color: var(--land); /* this tints the PNG when used with mix-blend-mode */
+      border-radius:50%;
+      padding:6px;
     }
 
-    footer {
-      margin-top: 60px;
-      color: #CFCFCF;
-      font-size: 0.9rem;
+    /* Responsive breakpoints */
+    @media (max-width: 900px){
+      .modes{ grid-template-columns: repeat(3, 1fr); }
     }
-  .mode-btn {
-      background: #3e7ac3;
-      color: white;
-      padding: 14px;
-      border-radius: 10px;
-      text-decoration: none;
-      font-size: 1.2rem;
-      font-weight: 600;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
-      transition: 0.2s;
+    @media (max-width: 600px){
+      .modes{ grid-template-columns: repeat(2, 1fr); }
+      body{ padding: 20px; }
+    }
+    @media (max-width: 400px){
+      .modes{ grid-template-columns: 1fr; }
     }
 
-    .mode-img {
-      width: 80px;
-      height: 80px;
-      object-fit: contain;
-      filter: drop-shadow(0 0 6px rgba(0,0,0,0.4));
-    }
-
-</style>
+    footer{ margin-top:34px; color:#CFCFCF; font-size:.9rem; }
+  </style>
 </head>
-
 <body>
 
-  <img id="logo" src="/geofavicon/logo.png" alt="GeoBrawl Logo">
+  <img id="logo" src="/geofavicon/logo.png" alt="GeoBrawl logo" />
 
   <h1>GeoBrawl</h1>
   <p>A fast paced, multiplayer location guessing game.</p>
-
-  <a class="button" href="public/index.html">Play Now</a>
+  <a class="cta" href="public/index.html">Play Now</a>
 
   <div class="modes">
-    <a class="mode-btn" href="public/index.html?mode=us">
-      <img src="/images/us.png" class="mode-img" alt="US">
+    <!-- Example using inline SVG (recommended) -->
+    <a class="mode-btn" href="public/index.html?mode=us" title="United States">
+      <div class="mode-icon" aria-hidden="true">
+        <!-- Replace the <path> below with a refined US silhouette path or an SVG file you prefer.
+             The class "land" is what will receive the green (#6BBE47) via CSS var(--land). -->
+        <svg viewBox="0 0 512 320" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="US silhouette">
+          <g class="land">
+            <!-- Simplified silhouette path — replace with higher-fidelity path if you have one -->
+            <path d="M18 140C28 110 46 88 70 82c12-3 28-2 42-1 18 1 32 5 48 6 14 1 30-3 46-2 18 1 34 5 50 6 18 1 34-3 50-2 12 0 26 2 42 3 14 1 30 4 46 8 18 5 34 13 50 20 10 4 24 14 32 22 7 7 12 18 15 28 5 18 3 38-2 56-7 23-22 36-44 42-16 4-34 6-52 7-20 1-38 0-56 0-16 0-32 1-48 2-18 1-32 4-48 7-26 5-46 16-70 20-18 3-36 4-54 5-18 1-36 0-54 0-16 0-32-2-46-8C32 246 20 208 18 140z"/>
+          </g>
+        </svg>
+      </div>
       United States
     </a>
-    <a class="mode-btn" href="public/index.html?mode=world">
-      <img src="/favicon/logo.png" class="mode-img" alt="Worldwide">
+
+    <!-- Example using a PNG (fallback). Save a PNG at /images/us.png (transparent background preferred). -->
+    <a class="mode-btn" href="public/index.html?mode=world" title="Worldwide">
+      <div class="mode-icon" style="background:transparent;">
+        <img class="mode-img-png" src="/images/world.png" alt="World icon (PNG)" />
+      </div>
       Worldwide
     </a>
+
+    <!-- Other region buttons; use inline SVG or PNGs as above -->
     <a class="mode-btn" href="public/index.html?mode=europe">
-      <img src="/images/europe.png" class="mode-img" alt="Europe">
+      <div class="mode-icon">
+        <!-- Replace with inline SVG for Europe (recommended) -->
+        <svg viewBox="0 0 100 100" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" role="img">
+          <g class="land"><circle cx="50" cy="50" r="38" /></g>
+        </svg>
+      </div>
       Europe
     </a>
+
     <a class="mode-btn" href="public/index.html?mode=africa">
-      <img src="/images/africa.png" class="mode-img" alt="Africa">
+      <div class="mode-icon">
+        <!-- replace with your Africa SVG -->
+        <svg viewBox="0 0 100 100" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" role="img">
+          <g class="land"><rect x="12" y="12" width="76" height="76" rx="14" /></g>
+        </svg>
+      </div>
       Africa
     </a>
+
     <a class="mode-btn" href="public/index.html?mode=north_america">
-      <img src="/images/north_america.png" class="mode-img" alt="North America">
+      <div class="mode-icon">
+        <!-- SVG or PNG for North America -->
+        <svg viewBox="0 0 100 100" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+          <g class="land"><path d="M10 25 L80 20 L85 60 L50 80 L15 60 Z"/></g>
+        </svg>
+      </div>
       North America
     </a>
+
     <a class="mode-btn" href="public/index.html?mode=south_america">
-      <img src="/images/south_america.png" class="mode-img" alt="South America">
+      <div class="mode-icon">
+        <!-- SVG or PNG for South America -->
+        <svg viewBox="0 0 100 100" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+          <g class="land"><path d="M50 10 L75 35 L65 80 L35 75 L30 40 Z"/></g>
+        </svg>
+      </div>
       South America
     </a>
+
     <a class="mode-btn" href="public/index.html?mode=oceania">
-      <img src="/images/oceania.png" class="mode-img" alt="Oceania">
+      <div class="mode-icon">
+        <!-- SVG or PNG for Oceania -->
+        <svg viewBox="0 0 100 100" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+          <g class="land"><circle cx="45" cy="45" r="28" /></g>
+        </svg>
+      </div>
       Oceania
     </a>
+
     <a class="mode-btn" href="public/index.html?mode=asia">
-      <img src="/images/asia.png" class="mode-img" alt="Asia">
+      <div class="mode-icon">
+        <!-- SVG or PNG for Asia -->
+        <svg viewBox="0 0 100 100" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg">
+          <g class="land"><ellipse cx="50" cy="50" rx="36" ry="22" /></g>
+        </svg>
+      </div>
       Asia
     </a>
   </div>
 
-  <footer>
-    Website by Mahlan Media Webservices
-  </footer>
+  <footer>Website by Mahlan Media Webservices</footer>
 
 </body>
 </html>
-
