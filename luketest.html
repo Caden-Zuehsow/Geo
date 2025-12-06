@@ -1,4 +1,4 @@
-<!doctype html>
+ <!doctype html>
 <html>
 <head>
   <meta charset="utf-8">
@@ -90,7 +90,29 @@
       color: #CFCFCF;
       font-size: 0.9rem;
     }
-  </style>
+  .mode-btn {
+      background: #3e7ac3;
+      color: white;
+      padding: 14px;
+      border-radius: 10px;
+      text-decoration: none;
+      font-size: 1.2rem;
+      font-weight: 600;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      transition: 0.2s;
+    }
+
+    .mode-img {
+      width: 80px;
+      height: 80px;
+      object-fit: contain;
+      filter: drop-shadow(0 0 6px rgba(0,0,0,0.4));
+    }
+
+</style>
 </head>
 
 <body>
@@ -103,14 +125,38 @@
   <a class="button" href="public/index.html">Play Now</a>
 
   <div class="modes">
-    <a class="mode-btn" href="public/index.html?mode=us">United States</a>
-    <a class="mode-btn" href="public/index.html?mode=world">Worldwide</a>
-    <a class="mode-btn" href="public/index.html?mode=europe">Europe</a>
-    <a class="mode-btn" href="public/index.html?mode=africa">Africa</a>
-    <a class="mode-btn" href="public/index.html?mode=north_america">North America</a>
-    <a class="mode-btn" href="public/index.html?mode=south_america">South America</a>
-    <a class="mode-btn" href="public/index.html?mode=oceania">Oceania</a>
-    <a class="mode-btn" href="public/index.html?mode=asia">Asia</a>
+    <a class="mode-btn" href="public/index.html?mode=us">
+      <img src="/images/us.png" class="mode-img" alt="US">
+      United States
+    </a>
+    <a class="mode-btn" href="public/index.html?mode=world">
+      <img src="/images/world.png" class="mode-img" alt="Worldwide">
+      Worldwide
+    </a>
+    <a class="mode-btn" href="public/index.html?mode=europe">
+      <img src="/images/europe.png" class="mode-img" alt="Europe">
+      Europe
+    </a>
+    <a class="mode-btn" href="public/index.html?mode=africa">
+      <img src="/images/africa.png" class="mode-img" alt="Africa">
+      Africa
+    </a>
+    <a class="mode-btn" href="public/index.html?mode=north_america">
+      <img src="/images/north_america.png" class="mode-img" alt="North America">
+      North America
+    </a>
+    <a class="mode-btn" href="public/index.html?mode=south_america">
+      <img src="/images/south_america.png" class="mode-img" alt="South America">
+      South America
+    </a>
+    <a class="mode-btn" href="public/index.html?mode=oceania">
+      <img src="/images/oceania.png" class="mode-img" alt="Oceania">
+      Oceania
+    </a>
+    <a class="mode-btn" href="public/index.html?mode=asia">
+      <img src="/images/asia.png" class="mode-img" alt="Asia">
+      Asia
+    </a>
   </div>
 
   <footer>
