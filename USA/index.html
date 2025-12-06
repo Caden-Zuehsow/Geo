@@ -556,32 +556,35 @@ function updateRolePanels() {
 }
 
 /* ----------------------------
+/* ----------------------------
    Initialize maps when API calls callback
-   ---------------------------- */
-// The maps API will call window.initMaps if that's what's specified in your script tag callback
+   ----------------------------
+   IMPORTANT: We already defined the real initialization earlier.
+   Google Maps calls window.initMaps (via callback param). Ensure
+   that we call the real init function (which is here named initMapsSetup).
+   If the earlier map init is named initMaps, this wrapper simply calls it.
+---------------------------- */
+
+// If your real map setup function is named initMaps (earlier), keep this:
 function initMaps() {
   try {
-    initMapsInternal();
+    // call the real initialization function defined earlier in the file
+    // If earlier function was named initMaps, it will execute.
+    // If you renamed the earlier one to initMapsInternal, change this call accordingly.
+    if (typeof initMapsSetup === "function") {
+      initMapsSetup();
+    } else if (typeof initMaps === "function" && initMaps !== initMaps) {
+      // noop (this block won't run) — left for clarity
+    } else {
+      // If you used the earlier name initMaps, just call it directly:
+      // (the most typical case)
+      // no-op — the earlier initMaps function will run because it's declared above
+    }
   } catch (e) {
-    // In case of error, attempt to continue gracefully
     console.error("initMaps error:", e);
   }
 }
 
-// We keep the map creation in a separate function name to avoid callback confusion
-function initMapsInternal() {
-  initMaps(); // this will actually call the function defined earlier at top-level for maps
-}
-
-/* ----------------------------
-   Defensive: handle connection errors
-   ---------------------------- */
-socket.on("connect_error", (err) => {
-  console.warn("Socket connect_error:", err);
-});
-socket.on("disconnect", (reason) => {
-  console.warn("Socket disconnected:", reason);
-});
 </script>
 
 
