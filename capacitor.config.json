@@ -1,0 +1,21 @@
+{
+  "appId": "com.example.multiplayergame",
+  "appName": "My Multiplayer Game",
+  "webDir": "build",
+  "bundledWebRuntime": false,
+  "server": {
+    "url": "https://yourgame.com",
+    "cleartext": false
+  },
+  "android": {
+    "allowMixedContent": false
+  },
+  "ios": {
+    "allowsLinkPreview": false,
+    "contentInset": "never",
+    "backgroundColor": "#000000",
+    "limitsNavigationsToAppBoundDomains": false,
+    "usesNonExemptEncryption": false
+  }
+}
+
