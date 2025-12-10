@@ -42,14 +42,28 @@
 
     /* Modes grid: desktop 4 columns */
     .modes{
-      margin-top:30px;
-      display:grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap:18px;
-      padding: 0 12px;
-      max-width: 980px;
-      margin-left:auto;
-      margin-right:auto;
+  margin-top:30px;
+  display:grid;
+  grid-template-columns: repeat(4, 1fr); /* 4 across */
+  gap:18px;
+  padding: 0 12px;
+  max-width: 980px;
+  margin-left:auto;
+  margin-right:auto;
+}
+
+@media (max-width: 900px){
+  .modes{ grid-template-columns: repeat(3, 1fr); } /* 3 across */
+}
+
+@media (max-width: 600px){
+  .modes{ grid-template-columns: repeat(2, 1fr); } /* 2 across */
+}
+
+@media (max-width: 400px){
+  .modes{ grid-template-columns: 1fr; } /* 1 across */
+}
+
     }
 
     .mode-btn{
