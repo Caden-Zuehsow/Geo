@@ -1,0 +1,84 @@
+name: iOS Release
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: macos-latest
+    env:
+      LC_ALL: en_US.UTF-8
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web app
+        run: npm run build
+
+      - name: Install Capacitor
+        run: npm install @capacitor/cli @capacitor/core
+
+      - name: Add iOS platform & sync
+        run: |
+          npx cap add ios || true
+          npx cap sync ios
+
+      - name: Install CocoaPods
+        working-directory: ios/App
+        run: |
+          sudo gem install cocoapods -v 1.12.0 || true
+          pod install
+
+      - name: Decode certificate
+        run: |
+          echo "${{ secrets.IOS_CERT_BASE64 }}" | base64 --decode > ios_cert.p12
+        env:
+          IOS_CERT_BASE64: ${{ secrets.IOS_CERT_BASE64 }}
+
+      - name: Decode provisioning profile
+        run: |
+          echo "${{ secrets.IOS_PROV_BASE64 }}" | base64 --decode > profile.mobileprovision
+        env:
+          IOS_PROV_BASE64: ${{ secrets.IOS_PROV_BASE64 }}
+
+      - name: Install certificate into keychain
+        run: |
+          security create-keychain -p "" build.keychain
+          security import ios_cert.p12 -k build.keychain -P "${{ secrets.IOS_CERT_PASSWORD }}" -T /usr/bin/codesign
+          security list-keychains -s build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p "" build.keychain
+        env:
+          IOS_CERT_PASSWORD: ${{ secrets.IOS_CERT_PASSWORD }}
+
+      - name: Install provisioning profile
+        run: |
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp profile.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
+
+      - name: Build Xcode Archive
+        working-directory: ios/App
+        run: |
+          xcodebuild -workspace App.xcworkspace -scheme App -sdk iphoneos -configuration Release archive -archivePath $PWD/build/App.xcarchive
+
+      - name: Export IPA
+        working-directory: ios/App
+        run: |
+          xcodebuild -exportArchive -archivePath $PWD/build/App.xcarchive -exportPath $PWD/build -exportOptionsPlist ExportOptions.plist
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-ipa
+          path: ios/App/build/*.ipa
