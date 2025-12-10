@@ -4,7 +4,7 @@
   "webDir": "build",
   "bundledWebRuntime": false,
   "server": {
-    "url": "https://yourgame.com",
+    "url": "https://geobrawl.com",
     "cleartext": false
   },
   "android": {
