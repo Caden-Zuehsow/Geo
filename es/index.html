@@ -1,0 +1,403 @@
+<!doctype html>
+<html>
+<head>
+  <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-BPYMG0BNRP"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-BPYMG0BNRP');
+</script>
+
+<!-- FAVICONS -->
+<link rel="icon" type="image/png" href="/geofavicon/favicon-96x96.png" sizes="96x96" />
+<link rel="icon" type="image/svg+xml" href="/geofavicon/favicon.svg" />
+<link rel="shortcut icon" href="/geofavicon/favicon.ico" />
+<link rel="apple-touch-icon" sizes="180x180" href="/geofavicon/apple-touch-icon.png" />
+<link rel="manifest" href="/geofavicon/site.webmanifest" />
+
+<meta charset="utf-8" />
+<title>GeoBrawl — Map + Multiplayer + Street View</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+
+<style>
+  :root {
+    --bg: #11284B;
+    --text-light: #E8E8E8;
+    --text-accent: #4A90D6;
+    --panel: #1A355F;
+    --panel-border: #0A1630;
+    --button: #4A90D6;
+    --button-hover: #2F6CB0;
+  }
+
+  body {
+    font-family: system-ui, Arial;
+    margin:0;
+    padding:20px;
+    background: var(--bg);
+    display:flex;
+    justify-content:center;
+    color: var(--text-light);
+  }
+
+  /* LEFT PANEL (Main content area) */
+  #left {
+    width: 100%;
+    max-width: 500px;
+  }
+
+  #logo {
+    width: 160px;
+    height: auto;
+    display:block;
+    margin: 0 auto 8px auto;
+    filter: drop-shadow(0 0 8px rgba(0,0,0,0.5));
+  }
+
+  h2 {
+    text-align:center;
+    color: var(--text-accent);
+    font-size: 2.2rem;
+    margin-bottom: 6px;
+  }
+
+  .panel {
+    background: var(--panel);
+    padding:14px;
+    border-radius:12px;
+    margin-bottom:16px;
+    border: 1px solid var(--panel-border);
+    box-shadow:0 2px 6px rgba(0,0,0,0.35);
+  }
+
+  button {
+    width:100%;
+    background: var(--button);
+    color:white;
+    border:none;
+    padding:10px 12px;
+    border-radius:8px;
+    font-size:1rem;
+    font-weight:600;
+    margin-top:8px;
+    cursor:pointer;
+    transition:0.2s;
+  }
+
+  button:hover {
+    background: var(--button-hover);
+    transform: translateY(-2px);
+  }
+
+  input[type="text"] {
+    width:100%;
+    padding:9px;
+    margin-top:6px;
+    border-radius:8px;
+    border:1px solid #3c5d8f;
+    background:#0F223F;
+    color:white;
+    box-sizing:border-box;
+  }
+
+  #pickerMapContainer, #guesserMapContainer {
+    margin-top:10px;
+  }
+
+  #map, #guessMap {
+    width:100%;
+    height:300px;
+    border-radius:8px;
+    background:#0A1630;
+  }
+
+  #guesserStreetView {
+    width:100%;
+    height:280px;
+    border-radius:8px;
+    background:#0A1630;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-weight:bold;
+    color:#9bb5ff;
+    margin-bottom:8px;
+  }
+
+  .status { 
+    font-weight:600; 
+    margin-top:6px;
+    color: var(--text-accent);
+  }
+
+  .hint { 
+    font-size:0.9rem; 
+    color:#cbd6ff; 
+    margin-top:6px; 
+  }
+
+  /* Mobile */
+  @media (max-width: 480px) {
+    #map, #guessMap, #guesserStreetView {
+      height: 240px;
+    }
+  }
+</style>
+</head>
+
+<body>
+
+<div id="left">
+
+  <img id="logo" src="/geofavicon/logo.png" alt="Logo de GeoBrawl">
+
+  <h2>GeoBrawl</h2>
+
+  <!-- Lobby -->
+  <div class="panel" id="lobbyControls">
+    <button id="createBtn">Crear Sala</button>
+
+    <input id="roomInput" placeholder="Ingresa el código de la sala (ej. ABC123)" />
+    <button id="joinBtn">Unirse a la Sala</button>
+
+    <div class="hint">Abre la misma sala en otro navegador para jugar (2 jugadores).</div>
+  </div>
+
+  <!-- Room -->
+  <div class="panel" id="roomPanel" style="display:none;">
+    <div>Sala: <span id="roomIdSpan" style="color:var(--text-accent)"></span></div>
+    <div>Jugadores: <ul id="playersList"></ul></div>
+    <div>Puntuaciones: <pre id="scoresPre"></pre></div>
+    <div class="status" id="statusText">Esperando jugadores...</div>
+  </div>
+
+  <!-- Picker panel -->
+  <div class="panel" id="pickerPanel" style="display:none;">
+    <h3 style="color:var(--text-accent)">Selector — Street View en el mapa</h3>
+    <p>Mueve Street View en el mapa y haz clic en “Lugar Elegido”.</p>
+
+    <input id="hintInput" placeholder="Pista opcional (ej. 'Cerca de un río famoso')" />
+    <button id="submitPickBtn" disabled>Lugar Elegido</button>
+
+    <div id="pickerMapContainer">
+      <div id="map"></div>
+    </div>
+  </div>
+
+  <!-- Guesser panel -->
+  <div class="panel" id="guesserPanel" style="display:none;">
+    <h3 style="color:var(--text-accent)">Adivinador — Haz tu suposición</h3>
+
+    <div id="guesserStreetView">Esperando que el selector elija un lugar...</div>
+
+    <div id="guesserMapContainer">
+      <div id="guessMap"></div>
+    </div>
+
+    <div id="guessResult" style="margin-top:6px; font-weight:600;"></div>
+
+    <button id="submitGuessBtn" disabled>Enviar Respuesta</button>
+  </div>
+
+  <!-- Result -->
+  <div class="panel" id="resultPanel" style="display:none;">
+    <h3 style="color:var(--text-accent)">Resultado de la Ronda</h3>
+    <div id="resultText"></div>
+  </div>
+
+</div>
+
+<!-- Google Maps -->
+<script async src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCQHZHmpF-9_7jEixW8z_h_-zbImwnI3S0&callback=initMaps"></script>
+<script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+
+<!-- ALL YOUR ORIGINAL JS (unchanged) -->
+<script>
+/* ------- Your JavaScript is unchanged except for layout ------- */
+
+const SERVER_URL = "geo-production-f14c.up.railway.app";
+const socket = io(SERVER_URL, { transports: ["websocket"] });
+
+// DOM references
+const createBtn = document.getElementById('createBtn');
+const joinBtn = document.getElementById('joinBtn');
+const roomInput = document.getElementById('roomInput');
+const roomPanel = document.getElementById('roomPanel');
+const roomIdSpan = document.getElementById('roomIdSpan');
+const playersList = document.getElementById('playersList');
+const scoresPre = document.getElementById('scoresPre');
+const statusText = document.getElementById('statusText');
+const pickerPanel = document.getElementById('pickerPanel');
+const guesserPanel = document.getElementById('guesserPanel');
+const submitPickBtn = document.getElementById('submitPickBtn');
+const submitGuessBtn = document.getElementById('submitGuessBtn');
+const hintInput = document.getElementById('hintInput');
+const resultPanel = document.getElementById('resultPanel');
+const resultText = document.getElementById('resultText');
+const guesserStreetViewDiv = document.getElementById('guesserStreetView');
+const guessMapDiv = document.getElementById('guessMap');
+const guessResultDiv = document.getElementById('guessResult');
+
+let myRoomId=null, mySocketId=null;
+let players=[], scores={}, currentPickerId=null;
+let pickerMap, pickerStreetView, pickerLatLng=null;
+let guessMap, guessMarker=null, guesserPanorama=null;
+
+// Init maps with new DOM structure
+function initMaps() {
+pickerMap = new google.maps.Map(document.getElementById("map"), {
+  center:{lat:20,lng:0},
+  zoom:2,
+  streetViewControl:true,
+  gestureHandling: "greedy"
+});
+
+  pickerStreetView = pickerMap.getStreetView();
+  pickerStreetView.setVisible(true);
+
+  pickerStreetView.addListener("position_changed", () => {
+    const pos = pickerStreetView.getPosition();
+    pickerLatLng = { lat: pos.lat(), lng: pos.lng() };
+    if(currentPickerId === mySocketId) submitPickBtn.disabled = false;
+  });
+
+  // Guess map
+guessMap = new google.maps.Map(guessMapDiv, {
+  center:{lat:20,lng:0},
+  zoom:2,
+  gestureHandling: "greedy"
+});
+
+
+  guessMap.addListener("click", e => {
+    if(currentPickerId === mySocketId) return;
+    const latLng = { lat:e.latLng.lat(), lng:e.latLng.lng() };
+
+    if(guessMarker) guessMarker.setMap(null);
+    guessMarker = new google.maps.Marker({ position:latLng, map:guessMap });
+
+    submitGuessBtn.disabled = false;
+    submitGuessBtn.onclick = () => {
+      socket.emit("makeGuess",{roomId:myRoomId,lat:latLng.lat,lng:latLng.lng});
+      submitGuessBtn.disabled = true;
+    };
+  });
+}
+
+submitPickBtn.onclick = () => {
+  if(!pickerLatLng) return alert("Move Street View to pick a spot!");
+  socket.emit("pickLocation",{roomId:myRoomId,lat:pickerLatLng.lat,lng:pickerLatLng.lng,hint:hintInput.value});
+  submitPickBtn.disabled = true;
+  submitPickBtn.textContent="Spot Chosen";
+};
+
+// Remaining socket logic kept exactly the same…
+socket.on("connect",()=>mySocketId=socket.id);
+
+createBtn.onclick = () => {
+  socket.emit("createRoom",res=>{
+    if(res.ok){
+      myRoomId=res.roomId;
+      roomIdSpan.textContent=myRoomId;
+      roomPanel.style.display="";
+      document.getElementById("lobbyControls").style.display="none";
+    }
+  });
+};
+
+joinBtn.onclick = () => {
+  const r = roomInput.value.trim().toUpperCase();
+  if(!r) return alert("Enter a room code");
+  socket.emit("joinRoom",r,res=>{
+    if(!res.ok) return alert(res.err);
+    myRoomId=r;
+    roomIdSpan.textContent=myRoomId;
+    roomPanel.style.display="";
+    document.getElementById("lobbyControls").style.display="none";
+  });
+};
+
+socket.on("roomJoined",data=>{
+  players=data.players; scores=data.scores; currentPickerId=data.pickerSocketId;
+  updateLobbyUI(); updateRolePanels();
+});
+
+socket.on("startGuess",data=>{
+  guesserPanel.style.display="";
+  pickerPanel.style.display="none";
+  statusText.textContent="Make your guess…";
+  guesserStreetViewDiv.innerHTML="";
+
+  guesserPanorama = new google.maps.StreetViewPanorama(guesserStreetViewDiv,{
+    position:{lat:data.lat,lng:data.lng},
+    pov:{heading:0,pitch:0},
+    zoom:1,
+    disableDefaultUI:true,
+    clickToGo:false,
+    linksControl:false
+  });
+
+  guessMap.setCenter({lat:20,lng:0});
+  guessMap.setZoom(2);
+  if(guessMarker) guessMarker.setMap(null);
+  guessResultDiv.innerHTML="";
+});
+
+socket.on("roundResult",res=>{
+  resultPanel.style.display="";
+  resultText.innerHTML=`Distance: <b>${res.distanceMeters} m</b><br>Points: <b>${res.pointsAwarded}</b>`;
+  scores=res.scores; updateScoresUI();
+
+  new google.maps.Marker({
+    position:{lat:res.correct.lat,lng:res.correct.lng},
+    map:guessMap,
+    icon:"http://maps.google.com/mapfiles/ms/icons/green-dot.png"
+  });
+
+  guessResultDiv.innerHTML=`Distance: <b>${res.distanceMeters} m</b> — Points: <b>${res.pointsAwarded}</b>`;
+});
+
+socket.on("newRound",data=>{
+  currentPickerId=data.pickerSocketId;
+  scores=data.scores;
+  resultPanel.style.display="none";
+  guesserStreetViewDiv.innerHTML="Waiting for picker to pick spot...";
+  guessResultDiv.innerHTML="";
+  if(guessMarker) guessMarker.setMap(null);
+  guessMap.setCenter({lat:20,lng:0}); guessMap.setZoom(2);
+  updateScoresUI(); updateRolePanels();
+});
+
+function updateLobbyUI() {
+  playersList.innerHTML = players.map(p => p===mySocketId?"You":p).join("");
+  updateScoresUI();
+}
+
+function updateScoresUI() {
+  scoresPre.textContent = JSON.stringify(scores,null,2);
+}
+
+function updateRolePanels() {
+  if(players.length<2){
+    pickerPanel.style.display="none";
+    guesserPanel.style.display="none";
+    statusText.textContent="Waiting for another player…";
+    return;
+  }
+  if(currentPickerId===mySocketId){
+    statusText.textContent="You are the picker.";
+    pickerPanel.style.display="";
+    guesserPanel.style.display="none";
+  } else {
+    statusText.textContent="You are the guesser.";
+    pickerPanel.style.display="none";
+    guesserPanel.style.display="";
+  }
+}
+</script>
+
+
+</body>
+</html>
