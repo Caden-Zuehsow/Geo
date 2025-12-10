@@ -1,5 +1,5 @@
 {
-  "appId": "com.example.multiplayergame",
+  "appId": "com.geobrawl.site",
   "appName": "My Multiplayer Game",
   "webDir": "build",
   "bundledWebRuntime": false,
