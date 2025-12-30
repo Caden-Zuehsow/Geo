@@ -1,139 +1,228 @@
-// server.js (ESM Version)
-import express from 'express';
-import http from 'http';
-import { Server } from 'socket.io';
-import path from 'path';
-import { fileURLToPath } from 'url';
+// server.js (ESM)
+import express from "express";
+import http from "http";
+import { Server } from "socket.io";
+import path from "path";
+import { fileURLToPath } from "url";
 
-// Fix __dirname for ESM
+// --- ESM dirname fix ---
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
+// --- App setup ---
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server);
 
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, "public")));
 
-const rooms = {}; // { roomId: { players: [...], scores:{}, turn:0 } }
+// --- Game config ---
+const MAX_PLAYERS = 6;
 
+// --- In-memory rooms ---
+/*
+room = {
+  players: [socketId],
+  scores: { socketId: number },
+  pickerIndex: number,
+  currentRound: {
+    lat,
+    lng,
+    pickerId,
+    guesses: { socketId: { lat, lng } }
+  } | null
+}
+*/
+const rooms = {};
+
+// --- Helpers ---
 function makeRoomId() {
   return Math.random().toString(36).slice(2, 8).toUpperCase();
 }
 
 function haversineDistMeters(lat1, lon1, lat2, lon2) {
-  const toRad = (deg) => deg * Math.PI / 180;
+  const toRad = d => (d * Math.PI) / 180;
   const R = 6371000;
   const dLat = toRad(lat2 - lat1);
   const dLon = toRad(lon2 - lon1);
-  const a = Math.sin(dLat/2)**2 +
-            Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) *
-            Math.sin(dLon/2)**2;
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return R * c;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) *
+      Math.cos(toRad(lat2)) *
+      Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-io.on('connection', (socket) => {
-  console.log('conn', socket.id);
+function scoreFromDistance(distMeters) {
+  const miles = distMeters / 1609.34;
+  if (miles <= 1) return 1000;
+  return Math.max(0, 1000 - Math.round(miles));
+}
 
-  socket.on('createRoom', (cb) => {
-    let id = makeRoomId();
-    rooms[id] = { players: [socket.id], scores: {}, turn: 0 };
-    rooms[id].scores[socket.id] = 0;
+// --- Socket logic ---
+io.on("connection", socket => {
+  console.log("connected:", socket.id);
+
+  // ---- Create room ----
+  socket.on("createRoom", cb => {
+    const id = makeRoomId();
+
+    rooms[id] = {
+      players: [socket.id],
+      scores: { [socket.id]: 0 },
+      pickerIndex: 0,
+      currentRound: null
+    };
+
     socket.join(id);
     cb({ ok: true, roomId: id });
   });
 
-  socket.on('joinRoom', (roomId, cb) => {
+  // ---- Join room ----
+  socket.on("joinRoom", (roomId, cb) => {
     const room = rooms[roomId];
-    if (!room) { cb({ ok: false, err: 'Room not found' }); return; }
-    if (room.players.length >= 2) { cb({ ok: false, err: 'Room full' }); return; }
+    if (!room) return cb({ ok: false, err: "Room not found" });
+    if (room.players.length >= MAX_PLAYERS)
+      return cb({ ok: false, err: "Room full" });
 
     room.players.push(socket.id);
     room.scores[socket.id] = 0;
     socket.join(roomId);
 
-    io.to(roomId).emit('roomJoined', {
+    io.to(roomId).emit("roomJoined", {
       players: room.players,
       scores: room.scores,
-      pickerSocketId: room.players[room.turn % 2]
+      pickerSocketId: room.players[room.pickerIndex]
     });
 
     cb({ ok: true });
   });
 
-  socket.on('pickLocation', (data, cb) => {
+  // ---- Picker chooses location ----
+  socket.on("pickLocation", (data, cb) => {
     const room = rooms[data.roomId];
-    if (!room) { cb?.({ ok:false, err:'room' }); return; }
+    if (!room) return cb?.({ ok: false });
 
-    const pickerId = room.players[room.turn % 2];
-    if (socket.id !== pickerId) { cb?.({ ok:false, err:'not picker' }); return; }
+    const pickerId = room.players[room.pickerIndex];
+    if (socket.id !== pickerId)
+      return cb?.({ ok: false, err: "Not picker" });
 
-    const guesserId = room.players.find(id => id !== pickerId);
-    io.to(guesserId).emit('startGuess', {
+    room.currentRound = {
       lat: data.lat,
       lng: data.lng,
-      hint: data.hint || null
+      pickerId,
+      guesses: {}
+    };
+
+    room.players.forEach(id => {
+      if (id !== pickerId) {
+        io.to(id).emit("startGuess", {
+          lat: data.lat,
+          lng: data.lng,
+          hint: data.hint || null
+        });
+      }
     });
 
-    room._current = { lat: data.lat, lng: data.lng, picker: pickerId };
-    cb?.({ ok:true });
+    cb?.({ ok: true });
   });
 
-  socket.on('makeGuess', (data, cb) => {
+  // ---- Guesser submits guess ----
+  socket.on("makeGuess", (data, cb) => {
     const room = rooms[data.roomId];
-    if (!room || !room._current) { cb?.({ ok:false, err:'no round' }); return; }
+    if (!room || !room.currentRound)
+      return cb?.({ ok: false });
 
-    const correct = room._current;
-    const dist = haversineDistMeters(correct.lat, correct.lng, data.lat, data.lng);
+    const round = room.currentRound;
+    if (socket.id === round.pickerId) return;
+    if (round.guesses[socket.id]) return; // no double guesses
 
-    // ---- NEW SCORING SYSTEM ----
-    const miles = dist / 1609.34;
-    let score = 0;
+    round.guesses[socket.id] = {
+      lat: data.lat,
+      lng: data.lng
+    };
 
-    if (miles <= 1) {
-      score = 1000;
-    } else {
-      score = Math.max(0, 1000 - Math.round(miles));
+    const guessers = room.players.filter(
+      id => id !== round.pickerId
+    );
+
+    // Wait until all guessers guessed
+    if (Object.keys(round.guesses).length < guessers.length) {
+      cb?.({ ok: true, waiting: true });
+      return;
     }
 
-    room.scores[socket.id] = (room.scores[socket.id] || 0) + score;
-    // ----------------------------
+    // --- Score round ---
+    guessers.forEach(id => {
+      const g = round.guesses[id];
+      const dist = haversineDistMeters(
+        round.lat,
+        round.lng,
+        g.lat,
+        g.lng
+      );
+      const points = scoreFromDistance(dist);
 
-    io.to(data.roomId).emit('roundResult', {
-      correct: { lat: correct.lat, lng: correct.lng },
-      guess: { lat: data.lat, lng: data.lng },
-      distanceMeters: Math.round(dist),
-      pointsAwarded: score,
-      scores: room.scores
+      room.scores[id] = (room.scores[id] || 0) + points;
+
+      io.to(id).emit("roundResult", {
+        correct: { lat: round.lat, lng: round.lng },
+        distanceMeters: Math.round(dist),
+        pointsAwarded: points,
+        scores: room.scores
+      });
     });
 
-    delete room._current;
-    room.turn = (room.turn + 1) % 2;
+    // Advance picker
+    room.currentRound = null;
+    room.pickerIndex =
+      (room.pickerIndex + 1) % room.players.length;
 
     setTimeout(() => {
-      io.to(data.roomId).emit('newRound', {
-        pickerSocketId: room.players[room.turn % 2],
+      io.to(data.roomId).emit("newRound", {
+        pickerSocketId: room.players[room.pickerIndex],
         scores: room.scores
       });
     }, 1500);
 
-    cb?.({ ok:true, dist });
+    cb?.({ ok: true });
   });
 
-  socket.on('disconnect', () => {
-    for (const [id, room] of Object.entries(rooms)) {
-      if (room.players.includes(socket.id)) {
-        room.players = room.players.filter(s=>s!==socket.id);
-        delete room.scores[socket.id];
+  // ---- Disconnect ----
+  socket.on("disconnect", () => {
+    for (const [roomId, room] of Object.entries(rooms)) {
+      if (!room.players.includes(socket.id)) continue;
 
-        io.to(id).emit('playerLeft', { socketId: socket.id });
+      room.players = room.players.filter(id => id !== socket.id);
+      delete room.scores[socket.id];
 
-        if (room.players.length === 0) delete rooms[id];
+      // Cancel round if picker left
+      if (
+        room.currentRound &&
+        room.currentRound.pickerId === socket.id
+      ) {
+        room.currentRound = null;
       }
+
+      if (room.players.length === 0) {
+        delete rooms[roomId];
+        continue;
+      }
+
+      room.pickerIndex %= room.players.length;
+
+      io.to(roomId).emit("playerLeft", {
+        socketId: socket.id,
+        players: room.players,
+        scores: room.scores,
+        pickerSocketId: room.players[room.pickerIndex]
+      });
     }
   });
 });
 
+// --- Start server ---
 const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => console.log('listening on', PORT));
+server.listen(PORT, () =>
+  console.log("Server listening on", PORT)
+);
