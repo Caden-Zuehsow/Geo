@@ -58,7 +58,7 @@ window.initSolo = function() {
         new google.maps.LatLng(pickerLatLng.lat, pickerLatLng.lng)
       );
 
-      // Update score (basic example)
+      // Update score
       const points = Math.max(0, 1000 - Math.round(dist / 1609.34));
       score += points;
       scoreSpan.textContent = score;
