@@ -171,11 +171,13 @@
           linksControl: false
         });
 
-        // Map
-        map = new google.maps.Map(mapDiv, {
-          center: { lat: 0, lng: 0 },
-          zoom: 2,
-        });
+// Map
+map = new google.maps.Map(mapDiv, {
+  center: { lat: 0, lng: 0 },
+  zoom: 2,
+  gestureHandling: "greedy", // allows single-finger scroll and normal mouse wheel zoom
+});
+
 
         // Enable submitting guess only after clicking
         map.addListener('click', e => {
