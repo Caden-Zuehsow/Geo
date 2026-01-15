@@ -51,6 +51,7 @@
       cursor:pointer;
       background:var(--accent);
       color:white;
+      margin-top:6px;
     }
 
     #streetView, #map {
@@ -84,6 +85,7 @@
 
   <div class="panel">
     <div id="map"></div>
+    <button id="submitGuessBtn" disabled>Submit Guess</button>
   </div>
 
   <div class="panel" id="resultPanel" style="display:none;">
@@ -118,6 +120,7 @@
     const scoreSpan = document.getElementById('score');
     const resultPanel = document.getElementById('resultPanel');
     const resultText = document.getElementById('resultText');
+    const submitGuessBtn = document.getElementById('submitGuessBtn');
 
     let svPanorama, map, marker;
 
@@ -134,8 +137,7 @@
           if (status === google.maps.StreetViewStatus.OK) {
             callback(data.location.latLng);
           } else {
-            // Try again if no imagery
-            tryLocation();
+            tryLocation(); // Retry if no imagery
           }
         });
       }
@@ -147,17 +149,26 @@
       round++;
       roundSpan.textContent = round;
       resultPanel.style.display = 'none';
+      submitGuessBtn.disabled = true;
+
+      // Clear previous marker
+      if (marker) marker.setMap(null);
+      marker = null;
 
       // Get a random Street View location
       getRandomStreetViewLocation(latLng => {
         pickerLatLng = { lat: latLng.lat(), lng: latLng.lng() };
 
-        // Street View
+        // Street View — make it non-interactive while guessing
         svPanorama = new google.maps.StreetViewPanorama(streetViewDiv, {
           position: pickerLatLng,
           pov: { heading: 0, pitch: 0 },
           zoom: 1,
           disableDefaultUI: true,
+          clickToGo: false,
+          scrollwheel: false,
+          draggable: false,
+          linksControl: false
         });
 
         // Map
@@ -166,35 +177,39 @@
           zoom: 2,
         });
 
-        if(marker) marker.setMap(null);
-        marker = null;
-
-        // Add click listener for guessing
+        // Enable submitting guess only after clicking
         map.addListener('click', e => {
           if(marker) marker.setMap(null);
           marker = new google.maps.Marker({
             position: { lat: e.latLng.lat(), lng: e.latLng.lng() },
             map: map
           });
-
-          // Calculate distance
-          const dist = google.maps.geometry.spherical.computeDistanceBetween(
-            new google.maps.LatLng(e.latLng.lat(), e.latLng.lng()),
-            new google.maps.LatLng(pickerLatLng.lat, pickerLatLng.lng)
-          );
-
-          // Update score
-          const points = Math.max(0, 1000 - Math.round(dist / 1609.34));
-          score += points;
-          scoreSpan.textContent = score;
-
-          resultText.innerHTML = `Distance: ${Math.round(dist)} m — Points: ${points}`;
-          resultPanel.style.display = '';
+          submitGuessBtn.disabled = false;
         });
       });
     }
 
     startBtn.onclick = startRound;
+
+    submitGuessBtn.onclick = () => {
+      if(!marker) return alert("Click on the map to place your guess!");
+
+      // Calculate distance
+      const dist = google.maps.geometry.spherical.computeDistanceBetween(
+        new google.maps.LatLng(marker.getPosition().lat(), marker.getPosition().lng()),
+        new google.maps.LatLng(pickerLatLng.lat, pickerLatLng.lng)
+      );
+
+      // Update score
+      const points = Math.max(0, 1000 - Math.round(dist / 1609.34));
+      score += points;
+      scoreSpan.textContent = score;
+
+      resultText.innerHTML = `Distance: ${Math.round(dist)} m — Points: ${points}`;
+      resultPanel.style.display = '';
+
+      submitGuessBtn.disabled = true;
+    };
   };
 </script>
 
