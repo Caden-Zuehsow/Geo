@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>GeoBrawl — Solo</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <!-- Favicons -->
+  <link rel="icon" href="/geofavicon/favicon.ico" />
+
+  <style>
+    :root {
+      --bg:#11284B;
+      --panel:#1A355F;
+      --accent:#4A90D6;
+      --text:#E8E8E8;
+    }
+
+    body {
+      margin:0;
+      padding:20px;
+      background:var(--bg);
+      font-family:system-ui,Arial;
+      color:var(--text);
+      display:flex;
+      justify-content:center;
+    }
+
+    #container {
+      width:100%;
+      max-width:520px;
+    }
+
+    h1 {
+      text-align:center;
+      color:var(--accent);
+      margin-bottom:10px;
+    }
+
+    .panel {
+      background:var(--panel);
+      padding:14px;
+      border-radius:12px;
+      margin-bottom:14px;
+    }
+
+    button {
+      width:100%;
+      padding:10px;
+      font-weight:600;
+      border-radius:8px;
+      border:none;
+      cursor:pointer;
+      background:var(--accent);
+      color:white;
+    }
+
+    #streetView {
+      width:100%;
+      height:260px;
+      border-radius:8px;
+      margin-bottom:8px;
+    }
+
+    #map {
+      width:100%;
+      height:260px;
+      border-radius:8px;
+    }
+
+    .score {
+      font-weight:600;
+      margin-top:6px;
+    }
+  </style>
+</head>
+
+<body>
+<div id="container">
+
+  <h1>GeoBrawl — Solo</h1>
+
+  <div class="panel">
+    <button id="startBtn">Start New Game</button>
+    <div class="score">Round: <span id="round">0</span></div>
+    <div class="score">Score: <span id="score">0</span></div>
+  </div>
+
+  <div class="panel">
+    <div id="streetView">Loading Street View…</div>
+  </div>
+
+  <div class="panel">
+    <div id="map"></div>
+  </div>
+
+  <div class="panel" id="resultPanel" style="display:none;">
+    <div id="resultText"></div>
+  </div>
+
+</div>
+
+<!-- Google Maps -->
+<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_KEY&libraries=geometry&callback=initSolo"></script>
+<script src="/solo.js"></script>
+</body>
+</html>
