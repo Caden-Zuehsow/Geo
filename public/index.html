@@ -137,6 +137,7 @@
     color:#cbd6ff; 
     margin-top:6px; 
   }
+  
 
   /* Mobile */
   @media (max-width: 480px) {
@@ -144,6 +145,15 @@
       height: 240px;
     }
   }
+  #playersList {
+  list-style: none;
+  padding-left: 0;
+  margin: 4px 0;
+}
+#playersList li {
+  padding: 4px 0;
+}
+
 </style>
 </head>
 
@@ -370,10 +380,13 @@ socket.on("newRound",data=>{
   updateScoresUI(); updateRolePanels();
 });
 
-function updateLobbyUI() {
-  playersList.innerHTML = players.map(p => p===mySocketId?"You":p).join("");
+  function updateLobbyUI() {
+  playersList.innerHTML = players
+    .map(p => `<li>${p === mySocketId ? "You" : p}</li>`)
+    .join("");
   updateScoresUI();
 }
+
 
 function updateScoresUI() {
   scoresPre.textContent = JSON.stringify(scores,null,2);
