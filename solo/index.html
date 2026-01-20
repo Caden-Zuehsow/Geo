@@ -124,6 +124,13 @@
 
     let svPanorama, map, marker;
 
+    // --- Initialize map once ---
+    map = new google.maps.Map(mapDiv, {
+      center: { lat: 0, lng: 0 },
+      zoom: 2,
+      gestureHandling: "greedy",
+    });
+
     // --- Helper to get random Street View location ---
     function getRandomStreetViewLocation(callback) {
       const svService = new google.maps.StreetViewService();
@@ -151,15 +158,17 @@
       resultPanel.style.display = 'none';
       submitGuessBtn.disabled = true;
 
-      // Clear previous marker
-      if (marker) marker.setMap(null);
+      // Clear previous markers
+      if(marker) marker.setMap(null);
+      mapMarkers?.forEach(m => m.setMap(null));
       marker = null;
+      mapMarkers = [];
 
       // Get a random Street View location
       getRandomStreetViewLocation(latLng => {
         pickerLatLng = { lat: latLng.lat(), lng: latLng.lng() };
 
-        // Street View — make it non-interactive while guessing
+        // Street View — non-interactive while guessing
         svPanorama = new google.maps.StreetViewPanorama(streetViewDiv, {
           position: pickerLatLng,
           pov: { heading: 0, pitch: 0 },
@@ -171,15 +180,7 @@
           linksControl: false
         });
 
-// Map
-map = new google.maps.Map(mapDiv, {
-  center: { lat: 0, lng: 0 },
-  zoom: 2,
-  gestureHandling: "greedy", // allows single-finger scroll and normal mouse wheel zoom
-});
-
-
-        // Enable submitting guess only after clicking
+        // Map click to place guess
         map.addListener('click', e => {
           if(marker) marker.setMap(null);
           marker = new google.maps.Marker({
@@ -192,6 +193,8 @@ map = new google.maps.Map(mapDiv, {
     }
 
     startBtn.onclick = startRound;
+
+    let mapMarkers = [];
 
     submitGuessBtn.onclick = () => {
       if(!marker) return alert("Click on the map to place your guess!");
@@ -211,6 +214,45 @@ map = new google.maps.Map(mapDiv, {
       resultPanel.style.display = '';
 
       submitGuessBtn.disabled = true;
+
+      // --- Show correct location on the map ---
+      const correctMarker = new google.maps.Marker({
+        position: pickerLatLng,
+        map: map,
+        icon: {
+          path: google.maps.SymbolPath.CIRCLE,
+          scale: 8,
+          fillColor: "#00FF00",
+          fillOpacity: 0.8,
+          strokeWeight: 2,
+          strokeColor: "#000"
+        },
+        title: "Correct location"
+      });
+      mapMarkers.push(correctMarker);
+      mapMarkers.push(marker);
+
+      // Zoom map to show both points
+      const bounds = new google.maps.LatLngBounds();
+      bounds.extend(marker.getPosition());
+      bounds.extend(pickerLatLng);
+      map.fitBounds(bounds);
+
+      // --- Enable interactive Street View ---
+      svPanorama.setOptions({
+        disableDefaultUI: false,
+        clickToGo: true,
+        scrollwheel: true,
+        draggable: true,
+        linksControl: true
+      });
+
+      // Optional: set POV toward correct location
+      const heading = google.maps.geometry.spherical.computeHeading(
+        marker.getPosition(),
+        pickerLatLng
+      );
+      svPanorama.setPov({ heading, pitch: 0 });
     };
   };
 </script>
