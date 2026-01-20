@@ -170,14 +170,16 @@
 
         // Street View — non-interactive while guessing
         svPanorama = new google.maps.StreetViewPanorama(streetViewDiv, {
-          position: pickerLatLng,
-          pov: { heading: 0, pitch: 0 },
-          zoom: 1,
-          disableDefaultUI: true,
-          clickToGo: false,
-          scrollwheel: false,
-          draggable: false,
-          linksControl: false
+  position: pickerLatLng,
+  pov: { heading: 0, pitch: 0 },
+  zoom: 1,
+  disableDefaultUI: false,   // show controls
+  clickToGo: true,           // allow movement along streets
+  scrollwheel: true,         // allow zoom with mouse wheel
+  draggable: true,           // allow mouse drag to look around
+  linksControl: true         // allow arrow navigation
+});
+
         });
 
         // Map click to place guess
