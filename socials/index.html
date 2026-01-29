@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>GeoBrawl — Socials</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- Favicon -->
+  <link rel="icon" href="/geofavicon/favicon.ico">
+
+  <style>
+    :root {
+      --ocean: #4A90D6;
+      --background: #11284B;
+      --panel: #1A355F;
+      --text: #E8E8E8;
+    }
+
+    body {
+      margin: 0;
+      padding: 30px;
+      font-family: system-ui, Arial, sans-serif;
+      background: var(--background);
+      color: var(--text);
+      text-align: center;
+    }
+
+    h1 {
+      color: var(--ocean);
+      font-size: 2.5rem;
+      margin-bottom: 10px;
+    }
+
+    p {
+      font-size: 1.1rem;
+      margin-bottom: 40px;
+    }
+
+    .socials {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 25px;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .social-card {
+      background: var(--panel);
+      padding: 25px;
+      border-radius: 14px;
+      text-decoration: none;
+      color: white;
+      font-size: 1.2rem;
+      font-weight: 600;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+    }
+
+    .social-card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 10px 28px rgba(0,0,0,0.35);
+    }
+
+    .social-card span {
+      display: block;
+      margin-top: 8px;
+      font-size: 0.95rem;
+      font-weight: 400;
+      color: #cfdcff;
+    }
+
+    footer {
+      margin-top: 60px;
+      font-size: 0.9rem;
+      color: #CFCFCF;
+    }
+
+    footer a {
+      color: #9bb5ff;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+
+<body>
+
+  <h1>GeoBrawl Socials</h1>
+  <p>Join the community, watch updates, and stay connected.</p>
+
+  <div class="socials">
+    <!-- YouTube -->
+    <a class="social-card" href="https://www.youtube.com/" target="_blank" rel="noopener">
+      📺 YouTube
+      <span>Gameplay, updates, and announcements</span>
+    </a>
+
+    <!-- Discord -->
+    <a class="social-card" href="https://discord.gg/" target="_blank" rel="noopener">
+      💬 Discord
+      <span>Chat with players & join events</span>
+    </a>
+
+    <!-- Instagram -->
+    <a class="social-card" href="https://www.instagram.com/" target="_blank" rel="noopener">
+      📸 Instagram
+      <span>Clips, highlights, and news</span>
+    </a>
+  </div>
+
+  <footer>
+    <p>
+      <a href="/">← Back to GeoBrawl</a>
+    </p>
+    <p>Website by Mahlan Media Webservices</p>
+  </footer>
+
+</body>
+</html>
