@@ -84,8 +84,9 @@
       text-decoration: none;
       font-size: 1.3rem;
       font-weight: 600;
-      display: inline-block;
-      margin-top: 25px;
+      display: block; /* makes buttons stack vertically */
+      margin: 15px auto 0 auto; /* vertical spacing and center */
+      width: 220px; /* optional fixed width for uniform buttons */
       transition: 0.2s;
     }
 
@@ -140,7 +141,9 @@
   <h1>GeoBrawl</h1>
   <p>GeoBrawl lets you and your friends choose each others guessing location</p>
 
-  <a class="button" href="public/index.html">Play Now</a>
+  <!-- Buttons stacked vertically -->
+  <a class="button" href="/solo">Single Player</a>
+  <a class="button" href="/public">Multiplayer</a>
 
   <footer>
     <div class="footer-links">
@@ -151,4 +154,3 @@
 
 </body>
 </html>
-
