@@ -173,10 +173,11 @@ window.initSolo = function() {
         position: pickerLatLng,
         pov: { heading: 0, pitch: 0 },
         zoom: 1,
-        disableDefaultUI: false,   // show controls
+        disableDefaultUI: true,   // show controls
         clickToGo: false,           // allow street movement
         scrollwheel: true,         // zoom with wheel
         draggable: true,           // click-drag to look around
+        addressControl: false,
         linksControl: false
       });
 
