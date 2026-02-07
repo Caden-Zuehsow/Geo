@@ -17,7 +17,7 @@ const io = new Server(server);
 app.use(express.static(path.join(__dirname, "public")));
 
 // --- Game config ---
-const MAX_PLAYERS = 6;
+const MAX_PLAYERS = 10;
 
 // --- In-memory rooms ---
 /*
