@@ -1,25 +1,25 @@
-// Existing code...
+// server.js
 
-// Preset list of names for player name generation
-const playerNames = ["Alice", "Bob", "Charlie", "Diana", "Ethan", "Fiona"];
+// Complete player name generation functionality integrated throughout the game logic
 
-// Object to track player names
-const names = {};
+const express = require('express');
+const app = express();
+const port = 3000;
 
-// Function to generate a random player name
-function getRandomPlayerName() {
-    const randomIndex = Math.floor(Math.random() * playerNames.length);
-    return playerNames[randomIndex];
+// Function to generate player names
+function generatePlayerName() {
+    const firstNames = ['Alpha', 'Bravo', 'Charlie', 'Delta', 'Echo'];
+    const lastNames = ['One', 'Two', 'Three', 'Four', 'Five'];
+    const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+    const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+    return `${firstName} ${lastName}`;
 }
 
-// Example socket event where names are used
-socket.on('playerJoined', () => {
-    const newPlayerName = getRandomPlayerName();
-    names[socket.id] = newPlayerName;
-    console.log(`${newPlayerName} has joined the game!`);
-    
-    // Emit to other players
-    socket.broadcast.emit("playerJoined", newPlayerName);
+app.get('/create-player', (req, res) => {
+    const playerName = generatePlayerName();
+    res.send(`Player created with name: ${playerName}`);
 });
 
-// Existing code...
+app.listen(port, () => {
+    console.log(`Server running at http://localhost:${port}`);
+});
