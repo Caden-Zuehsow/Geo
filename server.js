@@ -1,25 +1,14 @@
-// server.js
-
-// Complete player name generation functionality integrated throughout the game logic
+// Original content of server.js from commit f100237c44b45e90d18fb60a495529082f2e8179
+// This code does not include player name generation
 
 const express = require('express');
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 
-// Function to generate player names
-function generatePlayerName() {
-    const firstNames = ['Alpha', 'Bravo', 'Charlie', 'Delta', 'Echo'];
-    const lastNames = ['One', 'Two', 'Three', 'Four', 'Five'];
-    const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
-    const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
-    return `${firstName} ${lastName}`;
-}
-
-app.get('/create-player', (req, res) => {
-    const playerName = generatePlayerName();
-    res.send(`Player created with name: ${playerName}`);
+app.get('/', (req, res) => {
+    res.send('Hello World!');
 });
 
 app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
+    console.log(`Server running on port ${port}`);
 });
