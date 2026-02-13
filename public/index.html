@@ -71,6 +71,24 @@
     border: 1px solid var(--panel-border);
     box-shadow:0 2px 6px rgba(0,0,0,0.35);
   }
+  #roomInput {
+  width: 100%;              /* full width like buttons */
+  padding: 10px 12px;       /* same padding as buttons */
+  margin: 8px 0;            /* spacing like buttons */
+  border-radius: 8px;       /* match buttons */
+  border: 1px solid #3c5d8f; /* subtle border */
+  background: white;        /* white background */
+  color: black;             /* black text */
+  font-size: 1rem;          /* match button font size */
+  font-weight: 600;         /* match button font weight */
+  text-align: center;       /* center text */
+  box-sizing: border-box;   /* ensures width includes padding */
+}
+
+#roomInput::placeholder {
+  color: #555;              /* gray placeholder text */
+  text-align: center;       /* center placeholder text too */
+}
 
   button {
     width:100%;
