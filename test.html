@@ -293,6 +293,9 @@ pickerMap = new google.maps.Map(document.getElementById("map"), {
     pickerLatLng = { lat: pos.lat(), lng: pos.lng() };
     if(currentPickerId === mySocketId) submitPickBtn.disabled = false;
   });
+let guessMap, guessMarker=null, guesserPanorama=null;
+
+/* 🔥 MOVE IT HERE */
 function loadWaitingAd() {
   guesserStreetViewDiv.innerHTML = `
     <iframe 
@@ -303,6 +306,9 @@ function loadWaitingAd() {
     </iframe>
   `;
 }
+
+function initMaps() {
+  
   // Guess map
 guessMap = new google.maps.Map(guessMapDiv, {
   center:{lat:20,lng:0},
