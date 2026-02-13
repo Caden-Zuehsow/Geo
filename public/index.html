@@ -188,7 +188,7 @@
     <h3 style="color:var(--text-accent)">Picker — Street View on Map</h3>
     <p>Move Street View on the map and click "Spot Chosen".</p>
 
-    <input id="hintInput" placeholder="Optional hint (e.g. 'Near a famous river')" />
+  <input id="hintInput" placeholder="Optional hint (e.g. 'Near a famous river')" style="display:none;" />
     <button id="submitPickBtn" disabled>Spot Chosen</button>
 
     <div id="pickerMapContainer">
@@ -251,7 +251,7 @@ const guessMapDiv = document.getElementById('guessMap');
 const guessResultDiv = document.getElementById('guessResult');
 
 let myRoomId=null, mySocketId=null;
-let players=[], scores={}, currentPickerId=null;
+let players=[], scores={}, currentPickerId=null, usernames={};
 let pickerMap, pickerStreetView, pickerLatLng=null;
 let guessMap, guessMarker=null, guesserPanorama=null;
 
@@ -330,8 +330,12 @@ joinBtn.onclick = () => {
 };
 
 socket.on("roomJoined",data=>{
-  players=data.players; scores=data.scores; currentPickerId=data.pickerSocketId;
-  updateLobbyUI(); updateRolePanels();
+  players=data.players;
+  scores=data.scores;
+  currentPickerId=data.pickerSocketId;
+  usernames=data.usernames || {};
+  updateLobbyUI();
+  updateRolePanels();
 });
 
 socket.on("startGuess",data=>{
@@ -380,18 +384,26 @@ socket.on("newRound",data=>{
   updateScoresUI(); updateRolePanels();
 });
 
-  function updateLobbyUI() {
+function updateLobbyUI() {
   playersList.innerHTML = players
-    .map(p => `<li>${p === mySocketId ? "You" : p}</li>`)
+    .map(p => {
+      const name = usernames[p] || p;
+      return `<li>${p === mySocketId ? "You (" + name + ")" : name}</li>`;
+    })
     .join("");
   updateScoresUI();
+  
 }
-
-
 function updateScoresUI() {
-  scoresPre.textContent = JSON.stringify(scores,null,2);
+  scoresPre.textContent = players
+    .map(id => {
+      const name = usernames[id] || id;
+      const score = scores[id] || 0;
+      return `${name}: ${score}`;
+    })
+    .join("\n");
 }
-
+  
 function updateRolePanels() {
   if(players.length<2){
     pickerPanel.style.display="none";
@@ -410,7 +422,6 @@ function updateRolePanels() {
   }
 }
 </script>
-
 
 </body>
 </html>
