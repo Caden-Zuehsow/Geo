@@ -251,7 +251,7 @@ const guessMapDiv = document.getElementById('guessMap');
 const guessResultDiv = document.getElementById('guessResult');
 
 let myRoomId=null, mySocketId=null;
-let players=[], scores={}, currentPickerId=null;
+let players=[], scores={}, currentPickerId=null, usernames={};
 let pickerMap, pickerStreetView, pickerLatLng=null;
 let guessMap, guessMarker=null, guesserPanorama=null;
 
@@ -330,8 +330,12 @@ joinBtn.onclick = () => {
 };
 
 socket.on("roomJoined",data=>{
-  players=data.players; scores=data.scores; currentPickerId=data.pickerSocketId;
-  updateLobbyUI(); updateRolePanels();
+  players=data.players;
+  scores=data.scores;
+  currentPickerId=data.pickerSocketId;
+  usernames=data.usernames || {};
+  updateLobbyUI();
+  updateRolePanels();
 });
 
 socket.on("startGuess",data=>{
@@ -380,9 +384,12 @@ socket.on("newRound",data=>{
   updateScoresUI(); updateRolePanels();
 });
 
-  function updateLobbyUI() {
+function updateLobbyUI() {
   playersList.innerHTML = players
-    .map(p => `<li>${p === mySocketId ? "You" : p}</li>`)
+    .map(p => {
+      const name = usernames[p] || p;
+      return `<li>${p === mySocketId ? "You (" + name + ")" : name}</li>`;
+    })
     .join("");
   updateScoresUI();
 }
