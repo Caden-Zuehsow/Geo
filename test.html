@@ -392,8 +392,8 @@ function updateLobbyUI() {
     })
     .join("");
   updateScoresUI();
+  
 }
-
 function updateScoresUI() {
   scoresPre.textContent = players
     .map(id => {
@@ -403,7 +403,7 @@ function updateScoresUI() {
     })
     .join("\n");
 }
-
+  
 function updateRolePanels() {
   if(players.length<2){
     pickerPanel.style.display="none";
