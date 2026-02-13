@@ -221,6 +221,10 @@
 <div class="panel" id="guesserPanel" style="display:none;">
   <h3 style="color:var(--text-accent)">Guesser — Make your guess</h3>
 
+  <!-- Ad container always visible -->
+  <div id="guesserAdContainer" style="width:100%; height:100px; margin-bottom:8px;"></div>
+
+  <!-- Street View -->
   <div id="guesserStreetView">Waiting for picker to pick spot...</div>
 
   <div id="guesserMapContainer">
@@ -230,7 +234,7 @@
   <div id="guessResult" style="margin-top:6px; font-weight:600;"></div>
 
   <button id="submitGuessBtn" disabled>Submit Guess</button>
-
+</div>
   <!-- Ad container for idle player -->
   <div id="guesserAdContainer" style="width:100%; height:100px; margin-top:10px; display:none;"></div>
 </div>
@@ -365,7 +369,17 @@ function updateAds() {
     loadAd("pickerAdContainer");
   }
 }
+function updateGuesserAd(isWaiting) {
+  const container = document.getElementById("guesserAdContainer");
 
+  if(isWaiting){
+    // Show waiting ad
+    container.innerHTML = "<div style='width:100%; height:100%; background:#333; color:#fff; display:flex; align-items:center; justify-content:center;'>Ad placeholder — Waiting for picker</div>";
+  } else {
+    // Show idle ad when it's your turn to guess
+    loadAd("guesserAdContainer");
+  }
+}
 // Load ad placeholder (replace with real Google ad code later)
 function loadAd(containerId){
   const container = document.getElementById(containerId);
@@ -464,23 +478,25 @@ function updateRolePanels() {
     pickerPanel.style.display="none";
     guesserPanel.style.display="none";
     statusText.textContent="Waiting for another player…";
-    updateAds(); // hide ads
     return;
   }
 
   if(currentPickerId===mySocketId){
+    // You are picker
     statusText.textContent="You are the picker.";
     pickerPanel.style.display="";
     guesserPanel.style.display="none";
   } else {
+    // You are guesser
     statusText.textContent="You are the guesser.";
     pickerPanel.style.display="none";
     guesserPanel.style.display="";
+
+    // If waiting for picker to pick, show waiting ad
+    const waiting = guesserStreetViewDiv.innerHTML.includes("Waiting for picker");
+    updateGuesserAd(waiting);
   }
-
-  updateAds(); // show ad to idle player
 }
-
 </script>
 
 </body>
