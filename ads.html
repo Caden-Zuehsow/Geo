@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>GeoBrawl Ad Test</title>
+  <title>GeoBrawl Ad Toggle Test</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <style>
     body {
@@ -53,6 +53,23 @@
       font-weight: bold;
       color: #9bb5ff;
     }
+
+    button {
+      width: 100%;
+      padding: 10px;
+      margin-top: 8px;
+      border-radius: 8px;
+      border: none;
+      background: #4A90D6;
+      color: white;
+      font-weight: 600;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      background: #2F6CB0;
+    }
   </style>
 </head>
 <body>
@@ -68,7 +85,21 @@
 
     <!-- Street View placeholder -->
     <div id="streetView">Street View Here</div>
+
+    <!-- Button to toggle ad -->
+    <button id="toggleAdBtn">Toggle Ad On/Off</button>
   </div>
+
+  <script>
+    const adContainer = document.getElementById('adContainer');
+    const toggleBtn = document.getElementById('toggleAdBtn');
+    let adVisible = true;
+
+    toggleBtn.onclick = () => {
+      adVisible = !adVisible;
+      adContainer.style.display = adVisible ? 'flex' : 'none';
+    };
+  </script>
 
 </body>
 </html>
