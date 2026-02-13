@@ -413,15 +413,24 @@ socket.on("roundResult",res=>{
 socket.on("newRound",data=>{
   currentPickerId=data.pickerSocketId;
   scores=data.scores;
+
   resultPanel.style.display="none";
+
+  // Reset panorama state
+  guesserPanorama = null;
+
   loadWaitingAd();
-document.getElementById("waitingMessage").style.display="block";
+  document.getElementById("waitingMessage").style.display="block";
+
   guessResultDiv.innerHTML="";
   if(guessMarker) guessMarker.setMap(null);
-  guessMap.setCenter({lat:20,lng:0}); guessMap.setZoom(2);
-  updateScoresUI(); updateRolePanels();
-});
 
+  guessMap.setCenter({lat:20,lng:0});
+  guessMap.setZoom(2);
+
+  updateScoresUI();
+  updateRolePanels();
+});
 function updateLobbyUI() {
   playersList.innerHTML = players
     .map(p => {
@@ -454,14 +463,16 @@ function updateRolePanels() {
     pickerPanel.style.display="";
     guesserPanel.style.display="none";
   } else {
-    statusText.textContent="You are the guesser.";
-    pickerPanel.style.display="none";
-    guesserPanel.style.display="";
+  statusText.textContent="You are the guesser.";
+  pickerPanel.style.display="none";
+  guesserPanel.style.display="";
 
-    // Show ad while waiting
+  // Only show ad if no Street View is active
+  if (!guesserPanorama) {
     loadWaitingAd();
     document.getElementById("waitingMessage").style.display = "block";
   }
+
 }
 </script>
 
