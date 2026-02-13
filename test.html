@@ -202,32 +202,38 @@
   </div>
 
   <!-- Picker panel -->
-  <div class="panel" id="pickerPanel" style="display:none;">
-    <h3 style="color:var(--text-accent)">Picker — Street View on Map</h3>
-    <p>Move Street View on the map and click "Spot Chosen".</p>
+<div class="panel" id="pickerPanel" style="display:none;">
+  <h3 style="color:var(--text-accent)">Picker — Street View on Map</h3>
+  <p>Move Street View on the map and click "Spot Chosen".</p>
 
   <input id="hintInput" placeholder="Optional hint (e.g. 'Near a famous river')" style="display:none;" />
-    <button id="submitPickBtn" disabled>Spot Chosen</button>
+  <button id="submitPickBtn" disabled>Spot Chosen</button>
 
-    <div id="pickerMapContainer">
-      <div id="map"></div>
-    </div>
+  <div id="pickerMapContainer">
+    <div id="map"></div>
   </div>
 
-  <!-- Guesser panel -->
-  <div class="panel" id="guesserPanel" style="display:none;">
-    <h3 style="color:var(--text-accent)">Guesser — Make your guess</h3>
+  <!-- Ad container for idle player -->
+  <div id="pickerAdContainer" style="width:100%; height:100px; margin-top:10px; display:none;"></div>
+</div>
 
-    <div id="guesserStreetView">Waiting for picker to pick spot...</div>
+<!-- Guesser panel -->
+<div class="panel" id="guesserPanel" style="display:none;">
+  <h3 style="color:var(--text-accent)">Guesser — Make your guess</h3>
 
-    <div id="guesserMapContainer">
-      <div id="guessMap"></div>
-    </div>
+  <div id="guesserStreetView">Waiting for picker to pick spot...</div>
 
-    <div id="guessResult" style="margin-top:6px; font-weight:600;"></div>
-
-    <button id="submitGuessBtn" disabled>Submit Guess</button>
+  <div id="guesserMapContainer">
+    <div id="guessMap"></div>
   </div>
+
+  <div id="guessResult" style="margin-top:6px; font-weight:600;"></div>
+
+  <button id="submitGuessBtn" disabled>Submit Guess</button>
+
+  <!-- Ad container for idle player -->
+  <div id="guesserAdContainer" style="width:100%; height:100px; margin-top:10px; display:none;"></div>
+</div>
 
   <!-- Result -->
   <div class="panel" id="resultPanel" style="display:none;">
@@ -334,7 +340,35 @@ createBtn.onclick = () => {
     }
   });
 };
+// Show ad to idle player
+function updateAds() {
+  if(players.length < 2){
+    // Hide both if waiting for a second player
+    document.getElementById("pickerAdContainer").style.display = "none";
+    document.getElementById("guesserAdContainer").style.display = "none";
+    return;
+  }
 
+  if(currentPickerId === mySocketId){
+    // You are picker → show ad to guesser
+    document.getElementById("pickerAdContainer").style.display = "none";
+    document.getElementById("guesserAdContainer").style.display = "block";
+
+    loadAd("guesserAdContainer"); // Placeholder or Google ad code
+  } else {
+    // You are guesser → show ad to picker
+    document.getElementById("pickerAdContainer").style.display = "block";
+    document.getElementById("guesserAdContainer").style.display = "none";
+
+    loadAd("pickerAdContainer");
+  }
+}
+
+// Load ad placeholder (replace with real Google ad code later)
+function loadAd(containerId){
+  const container = document.getElementById(containerId);
+  container.innerHTML = "<div style='width:100%; height:100%; background:#333; color:#fff; display:flex; align-items:center; justify-content:center;'>Ad placeholder (muted by default)</div>";
+}
 joinBtn.onclick = () => {
   const r = roomInput.value.trim().toUpperCase();
   if(!r) return alert("Enter a room code");
@@ -400,6 +434,7 @@ socket.on("newRound",data=>{
   if(guessMarker) guessMarker.setMap(null);
   guessMap.setCenter({lat:20,lng:0}); guessMap.setZoom(2);
   updateScoresUI(); updateRolePanels();
+  updateAds(); // update ads for new round
 });
 
 function updateLobbyUI() {
@@ -427,8 +462,10 @@ function updateRolePanels() {
     pickerPanel.style.display="none";
     guesserPanel.style.display="none";
     statusText.textContent="Waiting for another player…";
+    updateAds(); // hide ads
     return;
   }
+
   if(currentPickerId===mySocketId){
     statusText.textContent="You are the picker.";
     pickerPanel.style.display="";
@@ -438,6 +475,9 @@ function updateRolePanels() {
     pickerPanel.style.display="none";
     guesserPanel.style.display="";
   }
+
+  updateAds(); // show ad to idle player
+}
 }
 </script>
 
