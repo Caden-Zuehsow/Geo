@@ -20,20 +20,29 @@ app.use(express.static(path.join(__dirname, "public")));
 const MAX_PLAYERS = 10;
 
 // --- In-memory rooms ---
-/*
-room = {
-  players: [socketId],
-  scores: { socketId: number },
-  pickerIndex: number,
-  currentRound: {
-    lat,
-    lng,
-    pickerId,
-    guesses: { socketId: { lat, lng } }
-  } | null
-}
-*/
 const rooms = {};
+
+// --- 6 Letter Username Word List ---
+const WORDS = [
+  "PLANET","BRIDGE","MARKET","STREAM","FOREST","CASTLE",
+  "POCKET","CANDLE","BOTTLE","SILVER","GARDEN","ANCHOR",
+  "BUTTON","CIRCLE","FLOWER","FROZEN","GUITAR","HARBOR",
+  "ISLAND","JUNGLE","KITTEN","MEADOW","NATION","ORANGE",
+  "PILLOW","QUARRY","ROCKET","SUNSET","TUNNEL","VOYAGE",
+  "WINDOW","YELLOW","ZEPHYR"
+];
+
+function randomWord() {
+  return WORDS[Math.floor(Math.random() * WORDS.length)];
+}
+
+function uniqueUsername(room) {
+  let name;
+  do {
+    name = randomWord();
+  } while (Object.values(room.usernames || {}).includes(name));
+  return name;
+}
 
 // --- Helpers ---
 function makeRoomId() {
@@ -69,10 +78,13 @@ io.on("connection", socket => {
 
     rooms[id] = {
       players: [socket.id],
+      usernames: {},
       scores: { [socket.id]: 0 },
       pickerIndex: 0,
       currentRound: null
     };
+
+    rooms[id].usernames[socket.id] = randomWord();
 
     socket.join(id);
     cb({ ok: true, roomId: id });
@@ -87,10 +99,15 @@ io.on("connection", socket => {
 
     room.players.push(socket.id);
     room.scores[socket.id] = 0;
+
+    room.usernames = room.usernames || {};
+    room.usernames[socket.id] = uniqueUsername(room);
+
     socket.join(roomId);
 
     io.to(roomId).emit("roomJoined", {
       players: room.players,
+      usernames: room.usernames,
       scores: room.scores,
       pickerSocketId: room.players[room.pickerIndex]
     });
@@ -135,7 +152,7 @@ io.on("connection", socket => {
 
     const round = room.currentRound;
     if (socket.id === round.pickerId) return;
-    if (round.guesses[socket.id]) return; // no double guesses
+    if (round.guesses[socket.id]) return;
 
     round.guesses[socket.id] = {
       lat: data.lat,
@@ -146,13 +163,11 @@ io.on("connection", socket => {
       id => id !== round.pickerId
     );
 
-    // Wait until all guessers guessed
     if (Object.keys(round.guesses).length < guessers.length) {
       cb?.({ ok: true, waiting: true });
       return;
     }
 
-    // --- Score round ---
     guessers.forEach(id => {
       const g = round.guesses[id];
       const dist = haversineDistMeters(
@@ -173,7 +188,6 @@ io.on("connection", socket => {
       });
     });
 
-    // Advance picker
     room.currentRound = null;
     room.pickerIndex =
       (room.pickerIndex + 1) % room.players.length;
@@ -195,8 +209,8 @@ io.on("connection", socket => {
 
       room.players = room.players.filter(id => id !== socket.id);
       delete room.scores[socket.id];
+      delete room.usernames[socket.id];
 
-      // Cancel round if picker left
       if (
         room.currentRound &&
         room.currentRound.pickerId === socket.id
@@ -214,6 +228,7 @@ io.on("connection", socket => {
       io.to(roomId).emit("playerLeft", {
         socketId: socket.id,
         players: room.players,
+        usernames: room.usernames,
         scores: room.scores,
         pickerSocketId: room.players[room.pickerIndex]
       });
