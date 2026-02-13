@@ -343,8 +343,12 @@ createBtn.onclick = () => {
 // Show ad to idle player
 function updateAds() {
   if(players.length < 2){
-    // Hide both if waiting for a second player
-    document.getElementById("pickerAdContainer").style.display = "none";
+    // Show an ad while waiting for another player
+    const container = document.getElementById("pickerAdContainer");
+    container.style.display = "block";
+    container.innerHTML = "<div style='width:100%; height:100px; background:#333; color:#fff; display:flex; align-items:center; justify-content:center;'>Ad placeholder while waiting for other player</div>";
+
+    // Hide the guesser container just in case
     document.getElementById("guesserAdContainer").style.display = "none";
     return;
   }
@@ -353,13 +357,11 @@ function updateAds() {
     // You are picker → show ad to guesser
     document.getElementById("pickerAdContainer").style.display = "none";
     document.getElementById("guesserAdContainer").style.display = "block";
-
-    loadAd("guesserAdContainer"); // Placeholder or Google ad code
+    loadAd("guesserAdContainer");
   } else {
     // You are guesser → show ad to picker
     document.getElementById("pickerAdContainer").style.display = "block";
     document.getElementById("guesserAdContainer").style.display = "none";
-
     loadAd("pickerAdContainer");
   }
 }
