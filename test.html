@@ -394,9 +394,14 @@ function updateLobbyUI() {
   updateScoresUI();
 }
 
-
 function updateScoresUI() {
-  scoresPre.textContent = JSON.stringify(scores,null,2);
+  scoresPre.textContent = players
+    .map(id => {
+      const name = usernames[id] || id;
+      const score = scores[id] || 0;
+      return `${name}: ${score}`;
+    })
+    .join("\n");
 }
 
 function updateRolePanels() {
