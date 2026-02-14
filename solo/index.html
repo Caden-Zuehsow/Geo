@@ -2,9 +2,6 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <a href="/" aria-label="Return to GeoBrawl homepage">
-  <img id="logo" src="/geofavicon/logo.png" alt="GeoBrawl Logo">
-</a>
   <title>GeoBrawl — Solo</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <link rel="icon" href="/geofavicon/favicon.ico" />
@@ -30,6 +27,18 @@
     #container {
       width:100%;
       max-width:520px;
+    }
+
+    #logo {
+      width:140px;
+      display:block;
+      margin:0 auto 14px auto;
+      cursor:pointer;
+      transition:transform 0.2s ease;
+    }
+
+    #logo:hover {
+      transform:scale(1.05);
     }
 
     h1 {
@@ -68,23 +77,16 @@
       font-weight:600;
       margin-top:6px;
     }
-    #logo {
-  width: 140px;
-  display: block;
-  margin: 0 auto 12px auto;
-  cursor: pointer;
-  transition: transform 0.2s ease;
-}
-
-#logo:hover {
-  transform: scale(1.05);
-}
-
   </style>
 </head>
 
 <body>
 <div id="container">
+
+  <!-- Logo (correct location) -->
+  <a href="/" aria-label="Return to GeoBrawl homepage">
+    <img id="logo" src="/geofavicon/logo.png" alt="GeoBrawl Logo">
+  </a>
 
   <h1>GeoBrawl — Solo</h1>
 
@@ -109,7 +111,7 @@
 
 </div>
 
-<!-- Google Maps API -->
+<!-- Google Maps API (UNCHANGED) -->
 <script async
   src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCQHZHmpF-9_7jEixW8z_h_-zbImwnI3S0&libraries=geometry&callback=initSolo">
 </script>
@@ -140,14 +142,12 @@ window.initSolo = function() {
   let svPanorama, map, marker;
   let mapMarkers = [];
 
-  // Initialize map once
   map = new google.maps.Map(mapDiv, {
     center: { lat: 0, lng: 0 },
     zoom: 2,
     gestureHandling: "greedy",
   });
 
-  // --- Helper to get random Street View location ---
   function getRandomStreetViewLocation(callback) {
     const svService = new google.maps.StreetViewService();
 
@@ -160,7 +160,7 @@ window.initSolo = function() {
         if (status === google.maps.StreetViewStatus.OK) {
           callback(data.location.latLng);
         } else {
-          tryLocation(); // Retry if no imagery
+          tryLocation();
         }
       });
     }
@@ -174,7 +174,6 @@ window.initSolo = function() {
     resultPanel.style.display = 'none';
     submitGuessBtn.disabled = true;
 
-    // Clear previous markers
     if(marker) marker.setMap(null);
     mapMarkers.forEach(m => m.setMap(null));
     marker = null;
@@ -183,20 +182,18 @@ window.initSolo = function() {
     getRandomStreetViewLocation(latLng => {
       pickerLatLng = { lat: latLng.lat(), lng: latLng.lng() };
 
-      // Street View — fully interactive while guessing
       svPanorama = new google.maps.StreetViewPanorama(streetViewDiv, {
         position: pickerLatLng,
         pov: { heading: 0, pitch: 0 },
         zoom: 1,
-        disableDefaultUI: true,   // show controls
-        clickToGo: false,           // allow street movement
-        scrollwheel: true,         // zoom with wheel
-        draggable: true,           // click-drag to look around
+        disableDefaultUI: true,
+        clickToGo: false,
+        scrollwheel: true,
+        draggable: true,
         addressControl: false,
         linksControl: false
       });
 
-      // Map click to place guess
       map.addListener('click', e => {
         if(marker) marker.setMap(null);
         marker = new google.maps.Marker({
@@ -213,13 +210,11 @@ window.initSolo = function() {
   submitGuessBtn.onclick = () => {
     if(!marker) return alert("Click on the map to place your guess!");
 
-    // Calculate distance
     const dist = google.maps.geometry.spherical.computeDistanceBetween(
       new google.maps.LatLng(marker.getPosition().lat(), marker.getPosition().lng()),
       new google.maps.LatLng(pickerLatLng.lat, pickerLatLng.lng)
     );
 
-    // Update score
     const points = Math.max(0, 1000 - Math.round(dist / 1609.34));
     score += points;
     scoreSpan.textContent = score;
@@ -229,7 +224,6 @@ window.initSolo = function() {
 
     submitGuessBtn.disabled = true;
 
-    // Show correct location on the map
     const correctMarker = new google.maps.Marker({
       position: pickerLatLng,
       map: map,
@@ -243,21 +237,14 @@ window.initSolo = function() {
       },
       title: "Correct location"
     });
+
     mapMarkers.push(correctMarker);
     mapMarkers.push(marker);
 
-    // Zoom map to show both points
     const bounds = new google.maps.LatLngBounds();
     bounds.extend(marker.getPosition());
     bounds.extend(pickerLatLng);
     map.fitBounds(bounds);
-
-    // Optional: POV toward correct location
-    const heading = google.maps.geometry.spherical.computeHeading(
-      marker.getPosition(),
-      pickerLatLng
-    );
-    svPanorama.setPov({ heading, pitch: 0 });
   };
 };
 </script>
