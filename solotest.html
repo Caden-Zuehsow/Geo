@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>GeoBrawl — Solo</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <link rel="icon" href="/geofavicon/favicon.ico" />
+
+  <style>
+    :root {
+      --bg:#11284B;
+      --panel:#1A355F;
+      --accent:#4A90D6;
+      --text:#E8E8E8;
+    }
+
+    body {
+      margin:0;
+      padding:20px;
+      font-family:system-ui,Arial;
+      color:var(--text);
+      background:var(--bg);
+      display:flex;
+      justify-content:center;
+    }
+
+    #container {
+      width:100%;
+      max-width:520px;
+    }
+
+    #logo {
+      width:140px;
+      display:block;
+      margin:0 auto 14px auto;
+      cursor:pointer;
+      transition:transform 0.2s ease;
+    }
+
+    #logo:hover {
+      transform:scale(1.05);
+    }
+
+    h1 {
+      text-align:center;
+      color:var(--accent);
+      margin-bottom:10px;
+    }
+
+    .panel {
+      background:var(--panel);
+      padding:14px;
+      border-radius:12px;
+      margin-bottom:14px;
+    }
+
+    button {
+      width:100%;
+      padding:10px;
+      font-weight:600;
+      border-radius:8px;
+      border:none;
+      cursor:pointer;
+      background:var(--accent);
+      color:white;
+      margin-top:6px;
+    }
+
+    #streetView, #map {
+      width:100%;
+      height:260px;
+      border-radius:8px;
+      margin-bottom:8px;
+    }
+
+    .score {
+      font-weight:600;
+      margin-top:6px;
+    }
+  </style>
+</head>
+
+<body>
+<div id="container">
+
+  <!-- Logo (correct location) -->
+  <a href="/" aria-label="Return to GeoBrawl homepage">
+    <img id="logo" src="/geofavicon/logo.png" alt="GeoBrawl Logo">
+  </a>
+
+  <h1>GeoBrawl — Solo</h1>
+
+  <div class="panel">
+    <button id="startBtn">Start New Game</button>
+    <div class="score">Round: <span id="round">0</span></div>
+    <div class="score">Score: <span id="score">0</span></div>
+  </div>
+
+  <div class="panel">
+    <div id="streetView">Loading Street View…</div>
+  </div>
+
+  <div class="panel">
+    <div id="map"></div>
+    <button id="submitGuessBtn" disabled>Submit Guess</button>
+  </div>
+
+  <div class="panel" id="resultPanel" style="display:none;">
+    <div id="resultText"></div>
+  </div>
+
+</div>
+
+<!-- Google Maps API (UNCHANGED) -->
+<script async
+  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCQHZHmpF-9_7jEixW8z_h_-zbImwnI3S0&libraries=geometry&callback=initSolo">
+</script>
+
+<script>
+window.initSolo = function() {
+  console.log("initSolo called — Google Maps API loaded");
+
+  if (!google || !google.maps) {
+    console.error("Google Maps API not available!");
+    alert("Google Maps failed to load. Check your API key and internet connection.");
+    return;
+  }
+
+  let pickerLatLng = null;
+  let round = 0;
+  let score = 0;
+
+  const streetViewDiv = document.getElementById('streetView');
+  const mapDiv = document.getElementById('map');
+  const startBtn = document.getElementById('startBtn');
+  const roundSpan = document.getElementById('round');
+  const scoreSpan = document.getElementById('score');
+  const resultPanel = document.getElementById('resultPanel');
+  const resultText = document.getElementById('resultText');
+  const submitGuessBtn = document.getElementById('submitGuessBtn');
+
+  let svPanorama, map, marker;
+  let mapMarkers = [];
+
+  map = new google.maps.Map(mapDiv, {
+    center: { lat: 0, lng: 0 },
+    zoom: 2,
+    gestureHandling: "greedy",
+  });
+
+  function getRandomStreetViewLocation(callback) {
+    const svService = new google.maps.StreetViewService();
+
+    function tryLocation() {
+      const lat = (Math.random() - 0.5) * 180;
+      const lng = (Math.random() - 0.5) * 360;
+      const latLng = new google.maps.LatLng(lat, lng);
+
+      svService.getPanorama({ location: latLng, radius: 50000 }, (data, status) => {
+        if (status === google.maps.StreetViewStatus.OK) {
+          callback(data.location.latLng);
+        } else {
+          tryLocation();
+        }
+      });
+    }
+
+    tryLocation();
+  }
+
+function startRound() {
+  round++;
+  roundSpan.textContent = round;
+  resultPanel.style.display = 'none';
+  submitGuessBtn.disabled = true;
+
+  if(marker) marker.setMap(null);
+  mapMarkers.forEach(m => m.setMap(null));
+  marker = null;
+  mapMarkers = [];
+
+  // --------------------
+  // 1️⃣ Show Ad First
+  // --------------------
+  streetViewDiv.innerHTML = `
+    <iframe 
+      src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1&mute=1"
+      allow="autoplay; encrypted-media"
+      allowfullscreen
+      style="width:100%;height:100%;border:none;border-radius:8px;">
+    </iframe>
+  `;
+
+  // After 5 seconds, load actual Street View
+  setTimeout(() => {
+
+    getRandomStreetViewLocation(latLng => {
+      pickerLatLng = { lat: latLng.lat(), lng: latLng.lng() };
+
+      streetViewDiv.innerHTML = "";
+
+      svPanorama = new google.maps.StreetViewPanorama(streetViewDiv, {
+        position: pickerLatLng,
+        pov: { heading: 0, pitch: 0 },
+        zoom: 1,
+        disableDefaultUI: true,
+        clickToGo: false,
+        scrollwheel: true,
+        draggable: true,
+        addressControl: false,
+        linksControl: false
+      });
+
+      map.addListener('click', e => {
+        if(marker) marker.setMap(null);
+        marker = new google.maps.Marker({
+          position: { lat: e.latLng.lat(), lng: e.latLng.lng() },
+          map: map
+        });
+        submitGuessBtn.disabled = false;
+      });
+
+    });
+
+  }, 5000); // 5 second ad
+}
+
+  startBtn.onclick = startRound;
+
+  submitGuessBtn.onclick = () => {
+    if(!marker) return alert("Click on the map to place your guess!");
+
+    const dist = google.maps.geometry.spherical.computeDistanceBetween(
+      new google.maps.LatLng(marker.getPosition().lat(), marker.getPosition().lng()),
+      new google.maps.LatLng(pickerLatLng.lat, pickerLatLng.lng)
+    );
+
+    const points = Math.max(0, 1000 - Math.round(dist / 1609.34));
+    score += points;
+    scoreSpan.textContent = score;
+
+    resultText.innerHTML = `Distance: ${Math.round(dist)} m — Points: ${points}`;
+    resultPanel.style.display = '';
+
+    submitGuessBtn.disabled = true;
+
+    const correctMarker = new google.maps.Marker({
+      position: pickerLatLng,
+      map: map,
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 8,
+        fillColor: "#00FF00",
+        fillOpacity: 0.8,
+        strokeWeight: 2,
+        strokeColor: "#000"
+      },
+      title: "Correct location"
+    });
+
+    mapMarkers.push(correctMarker);
+    mapMarkers.push(marker);
+
+    const bounds = new google.maps.LatLngBounds();
+    bounds.extend(marker.getPosition());
+    bounds.extend(pickerLatLng);
+    map.fitBounds(bounds);
+  };
+};
+</script>
+
+</body>
+</html>
