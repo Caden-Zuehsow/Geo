@@ -12,7 +12,12 @@ const __dirname = path.dirname(__filename);
 // --- App setup ---
 const app = express();
 const server = http.createServer(app);
-const io = new Server(server);
+
+// SOCKET.IO KEEPALIVE SETTINGS (fix idle timeout)
+const io = new Server(server, {
+  pingInterval: 25000,
+  pingTimeout: 60000
+});
 
 app.use(express.static(path.join(__dirname, "public")));
 
@@ -52,28 +57,35 @@ function makeRoomId() {
 function haversineDistMeters(lat1, lon1, lat2, lon2) {
   const toRad = d => (d * Math.PI) / 180;
   const R = 6371000;
+
   const dLat = toRad(lat2 - lat1);
   const dLon = toRad(lon2 - lon1);
+
   const a =
     Math.sin(dLat / 2) ** 2 +
     Math.cos(toRad(lat1)) *
       Math.cos(toRad(lat2)) *
       Math.sin(dLon / 2) ** 2;
+
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 function scoreFromDistance(distMeters) {
   const miles = distMeters / 1609.34;
+
   if (miles <= 1) return 1000;
+
   return Math.max(0, 1000 - Math.round(miles));
 }
 
 // --- Socket logic ---
 io.on("connection", socket => {
+
   console.log("connected:", socket.id);
 
   // ---- Create room ----
   socket.on("createRoom", cb => {
+
     const id = makeRoomId();
 
     rooms[id] = {
@@ -87,20 +99,27 @@ io.on("connection", socket => {
     rooms[id].usernames[socket.id] = randomWord();
 
     socket.join(id);
+
     cb({ ok: true, roomId: id });
+
   });
 
   // ---- Join room ----
   socket.on("joinRoom", (roomId, cb) => {
+
     const room = rooms[roomId];
+
     if (!room) return cb({ ok: false, err: "Room not found" });
+
     if (room.players.length >= MAX_PLAYERS)
       return cb({ ok: false, err: "Room full" });
 
     room.players.push(socket.id);
+
     room.scores[socket.id] = 0;
 
     room.usernames = room.usernames || {};
+
     room.usernames[socket.id] = uniqueUsername(room);
 
     socket.join(roomId);
@@ -113,14 +132,18 @@ io.on("connection", socket => {
     });
 
     cb({ ok: true });
+
   });
 
   // ---- Picker chooses location ----
   socket.on("pickLocation", (data, cb) => {
+
     const room = rooms[data.roomId];
+
     if (!room) return cb?.({ ok: false });
 
     const pickerId = room.players[room.pickerIndex];
+
     if (socket.id !== pickerId)
       return cb?.({ ok: false, err: "Not picker" });
 
@@ -132,26 +155,35 @@ io.on("connection", socket => {
     };
 
     room.players.forEach(id => {
+
       if (id !== pickerId) {
+
         io.to(id).emit("startGuess", {
           lat: data.lat,
           lng: data.lng,
           hint: data.hint || null
         });
+
       }
+
     });
 
     cb?.({ ok: true });
+
   });
 
   // ---- Guesser submits guess ----
   socket.on("makeGuess", (data, cb) => {
+
     const room = rooms[data.roomId];
+
     if (!room || !room.currentRound)
       return cb?.({ ok: false });
 
     const round = room.currentRound;
+
     if (socket.id === round.pickerId) return;
+
     if (round.guesses[socket.id]) return;
 
     round.guesses[socket.id] = {
@@ -164,18 +196,24 @@ io.on("connection", socket => {
     );
 
     if (Object.keys(round.guesses).length < guessers.length) {
+
       cb?.({ ok: true, waiting: true });
+
       return;
+
     }
 
     guessers.forEach(id => {
+
       const g = round.guesses[id];
+
       const dist = haversineDistMeters(
         round.lat,
         round.lng,
         g.lat,
         g.lng
       );
+
       const points = scoreFromDistance(dist);
 
       room.scores[id] = (room.scores[id] || 0) + points;
@@ -186,29 +224,40 @@ io.on("connection", socket => {
         pointsAwarded: points,
         scores: room.scores
       });
+
     });
 
     room.currentRound = null;
+
     room.pickerIndex =
       (room.pickerIndex + 1) % room.players.length;
 
     setTimeout(() => {
+
       io.to(data.roomId).emit("newRound", {
         pickerSocketId: room.players[room.pickerIndex],
         scores: room.scores
       });
+
     }, 1500);
 
     cb?.({ ok: true });
+
   });
 
   // ---- Disconnect ----
-  socket.on("disconnect", () => {
+  socket.on("disconnect", reason => {
+
+    console.log("disconnect:", socket.id, reason);
+
     for (const [roomId, room] of Object.entries(rooms)) {
+
       if (!room.players.includes(socket.id)) continue;
 
       room.players = room.players.filter(id => id !== socket.id);
+
       delete room.scores[socket.id];
+
       delete room.usernames[socket.id];
 
       if (
@@ -219,8 +268,11 @@ io.on("connection", socket => {
       }
 
       if (room.players.length === 0) {
+
         delete rooms[roomId];
+
         continue;
+
       }
 
       room.pickerIndex %= room.players.length;
@@ -232,12 +284,16 @@ io.on("connection", socket => {
         scores: room.scores,
         pickerSocketId: room.players[room.pickerIndex]
       });
+
     }
+
   });
+
 });
 
 // --- Start server ---
 const PORT = process.env.PORT || 3000;
+
 server.listen(PORT, () =>
   console.log("Server listening on", PORT)
 );
