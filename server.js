@@ -1,15 +1,9 @@
 io.on("connection", socket => {
 
-  const playerId = socket.handshake.auth?.playerId;
-
-  if (!playerId) {
-    console.log("No playerId, disconnecting");
-    socket.disconnect();
-    return;
-  }
-
   const playerId =
-  socket.handshake.auth?.playerId || socket.id;
+    socket.handshake.auth?.playerId || socket.id;
+
+  console.log("connected:", socket.id, "player:", playerId);
 
   // ---- Find existing room (reconnect case) ----
   let existingRoomId = null;
@@ -229,7 +223,7 @@ io.on("connection", socket => {
           pickerSocketId: room.sockets[room.players[room.pickerIndex]]
         });
 
-      }, 10000); // reconnect window
+      }, 10000);
 
     }
 
