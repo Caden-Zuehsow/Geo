@@ -52,7 +52,7 @@ function haversineDistMeters(lat1, lon1, lat2, lon2) {
 }
 
 function scoreFromDistance(d) {
-  return Math.max(0, Math.round(5000 * Math.exp(-d / 2000000)));
+  return Math.max(0, Math.round(1000 * Math.exp(-d / 2000000)));
 }
 
 // ---- Socket Logic ----
