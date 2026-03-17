@@ -8,7 +8,8 @@ io.on("connection", socket => {
     return;
   }
 
-  console.log("connected:", socket.id, "player:", playerId);
+  const playerId =
+  socket.handshake.auth?.playerId || socket.id;
 
   // ---- Find existing room (reconnect case) ----
   let existingRoomId = null;
