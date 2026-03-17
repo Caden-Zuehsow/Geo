@@ -24,7 +24,7 @@ function makeRoomId() {
 }
 
 function randomWord() {
-  const words = ["Tiger", "Eagle", "Shark", "Wolf", "Panda", "Falcon"];
+  const words = ["Tiger", "Eagle", "Shark", "Wolf", "Panda", "Lion" , "{Parrot" , "Frog" , "Penguin" , "Zebra"];
   return words[Math.floor(Math.random() * words.length)];
 }
 
