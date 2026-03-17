@@ -1,9 +1,9 @@
 io.on("connection", socket => {
 
-  const playerId =
+  const pid =
     socket.handshake.auth?.playerId || socket.id;
 
-  console.log("connected:", socket.id, "player:", playerId);
+  console.log("connected:", socket.id, "player:", pid);
 
   // ---- Find existing room (reconnect case) ----
   let existingRoomId = null;
