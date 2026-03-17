@@ -126,7 +126,38 @@
     }
   </script>
 </head>
+<script src="/socket.io/socket.io.js"></script>
 
+<script>
+  // ---- Persistent Player ID ----
+  let playerId = localStorage.getItem("playerId");
+
+  if (!playerId) {
+    playerId = crypto.randomUUID();
+    localStorage.setItem("playerId", playerId);
+  }
+
+  // ---- Connect to server with ID ----
+  const socket = io({
+    auth: { playerId },
+    reconnection: true,
+    reconnectionAttempts: Infinity,
+    reconnectionDelay: 1000
+  });
+
+  // ---- Debug (optional but VERY helpful) ----
+  socket.on("connect", () => {
+    console.log("Connected:", socket.id);
+  });
+
+  socket.on("disconnect", (reason) => {
+    console.log("Disconnected:", reason);
+  });
+
+  socket.on("reconnect", () => {
+    console.log("Reconnected!");
+  });
+</script>
 <body>
 
   <!-- Language Dropdown -->
