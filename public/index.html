@@ -250,8 +250,18 @@
 <script>
 /* ------- Your JavaScript is unchanged except for layout ------- */
 
-const SERVER_URL = "geo-production-f14c.up.railway.app";
-const socket = io(SERVER_URL, { transports: ["websocket"] });
+const SERVER_URL = "https://geo-production-f14c.up.railway.app";
+let playerId = localStorage.getItem("playerId");
+
+if (!playerId) {
+  playerId = crypto.randomUUID();
+  localStorage.setItem("playerId", playerId);
+}
+
+const socket = io(SERVER_URL, {
+  transports: ["websocket"],
+  auth: { playerId }
+});
 
 // DOM references
 const createBtn = document.getElementById('createBtn');
