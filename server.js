@@ -1,87 +1,42 @@
-// server.js (ESM)
-import express from "express";
-import http from "http";
-import { Server } from "socket.io";
-import path from "path";
-import { fileURLToPath } from "url";
-
-// --- ESM dirname fix ---
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// --- App setup ---
-const app = express();
-const server = http.createServer(app);
-
-// SOCKET.IO KEEPALIVE SETTINGS (fix idle timeout)
-const io = new Server(server, {
-  pingInterval: 25000,
-  pingTimeout: 60000
-});
-
-app.use(express.static(path.join(__dirname, "public")));
-
-// --- Game config ---
-const MAX_PLAYERS = 10;
-
-// --- In-memory rooms ---
-const rooms = {};
-
-// --- 6 Letter Username Word List ---
-const WORDS = [
-  "PLANET","BRIDGE","MARKET","STREAM","FOREST","CASTLE",
-  "POCKET","CANDLE","BOTTLE","SILVER","GARDEN","ANCHOR",
-  "BUTTON","CIRCLE","FLOWER","FROZEN","GUITAR","HARBOR",
-  "ISLAND","JUNGLE","KITTEN","MEADOW","NATION","ORANGE",
-  "PILLOW","QUARRY","ROCKET","SUNSET","TUNNEL","VOYAGE",
-  "WINDOW","YELLOW","ZEPHYR"
-];
-
-function randomWord() {
-  return WORDS[Math.floor(Math.random() * WORDS.length)];
-}
-
-function uniqueUsername(room) {
-  let name;
-  do {
-    name = randomWord();
-  } while (Object.values(room.usernames || {}).includes(name));
-  return name;
-}
-
-// --- Helpers ---
-function makeRoomId() {
-  return Math.random().toString(36).slice(2, 8).toUpperCase();
-}
-
-function haversineDistMeters(lat1, lon1, lat2, lon2) {
-  const toRad = d => (d * Math.PI) / 180;
-  const R = 6371000;
-
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) *
-      Math.cos(toRad(lat2)) *
-      Math.sin(dLon / 2) ** 2;
-
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-function scoreFromDistance(distMeters) {
-  const miles = distMeters / 1609.34;
-
-  if (miles <= 1) return 1000;
-
-  return Math.max(0, 1000 - Math.round(miles));
-}
-
-// --- Socket logic ---
 io.on("connection", socket => {
 
-  console.log("connected:", socket.id);
+  const playerId = socket.handshake.auth?.playerId;
+
+  if (!playerId) {
+    console.log("No playerId, disconnecting");
+    socket.disconnect();
+    return;
+  }
+
+  console.log("connected:", socket.id, "player:", playerId);
+
+  // ---- Find existing room (reconnect case) ----
+  let existingRoomId = null;
+
+  for (const [roomId, room] of Object.entries(rooms)) {
+    if (room.players.includes(playerId)) {
+      existingRoomId = roomId;
+      break;
+    }
+  }
+
+  if (existingRoomId) {
+    const room = rooms[existingRoomId];
+
+    room.sockets[playerId] = socket.id;
+
+    socket.join(existingRoomId);
+
+    console.log("Reconnected to room:", existingRoomId);
+
+    socket.emit("rejoinedRoom", {
+      roomId: existingRoomId,
+      players: room.players,
+      usernames: room.usernames,
+      scores: room.scores,
+      pickerSocketId: room.sockets[room.players[room.pickerIndex]]
+    });
+  }
 
   // ---- Create room ----
   socket.on("createRoom", cb => {
@@ -89,14 +44,13 @@ io.on("connection", socket => {
     const id = makeRoomId();
 
     rooms[id] = {
-      players: [socket.id],
-      usernames: {},
-      scores: { [socket.id]: 0 },
+      players: [playerId],
+      sockets: { [playerId]: socket.id },
+      usernames: { [playerId]: randomWord() },
+      scores: { [playerId]: 0 },
       pickerIndex: 0,
       currentRound: null
     };
-
-    rooms[id].usernames[socket.id] = randomWord();
 
     socket.join(id);
 
@@ -114,13 +68,14 @@ io.on("connection", socket => {
     if (room.players.length >= MAX_PLAYERS)
       return cb({ ok: false, err: "Room full" });
 
-    room.players.push(socket.id);
+    // Prevent duplicate joins
+    if (!room.players.includes(playerId)) {
+      room.players.push(playerId);
+      room.scores[playerId] = 0;
+      room.usernames[playerId] = uniqueUsername(room);
+    }
 
-    room.scores[socket.id] = 0;
-
-    room.usernames = room.usernames || {};
-
-    room.usernames[socket.id] = uniqueUsername(room);
+    room.sockets[playerId] = socket.id;
 
     socket.join(roomId);
 
@@ -128,23 +83,22 @@ io.on("connection", socket => {
       players: room.players,
       usernames: room.usernames,
       scores: room.scores,
-      pickerSocketId: room.players[room.pickerIndex]
+      pickerSocketId: room.sockets[room.players[room.pickerIndex]]
     });
 
     cb({ ok: true });
 
   });
 
-  // ---- Picker chooses location ----
+  // ---- Pick location ----
   socket.on("pickLocation", (data, cb) => {
 
     const room = rooms[data.roomId];
-
     if (!room) return cb?.({ ok: false });
 
     const pickerId = room.players[room.pickerIndex];
 
-    if (socket.id !== pickerId)
+    if (playerId !== pickerId)
       return cb?.({ ok: false, err: "Not picker" });
 
     room.currentRound = {
@@ -154,39 +108,33 @@ io.on("connection", socket => {
       guesses: {}
     };
 
-    room.players.forEach(id => {
-
-      if (id !== pickerId) {
-
-        io.to(id).emit("startGuess", {
+    room.players.forEach(pid => {
+      if (pid !== pickerId) {
+        io.to(room.sockets[pid]).emit("startGuess", {
           lat: data.lat,
           lng: data.lng,
           hint: data.hint || null
         });
-
       }
-
     });
 
     cb?.({ ok: true });
 
   });
 
-  // ---- Guesser submits guess ----
+  // ---- Make guess ----
   socket.on("makeGuess", (data, cb) => {
 
     const room = rooms[data.roomId];
-
     if (!room || !room.currentRound)
       return cb?.({ ok: false });
 
     const round = room.currentRound;
 
-    if (socket.id === round.pickerId) return;
+    if (playerId === round.pickerId) return;
+    if (round.guesses[playerId]) return;
 
-    if (round.guesses[socket.id]) return;
-
-    round.guesses[socket.id] = {
+    round.guesses[playerId] = {
       lat: data.lat,
       lng: data.lng
     };
@@ -196,16 +144,13 @@ io.on("connection", socket => {
     );
 
     if (Object.keys(round.guesses).length < guessers.length) {
-
       cb?.({ ok: true, waiting: true });
-
       return;
-
     }
 
-    guessers.forEach(id => {
+    guessers.forEach(pid => {
 
-      const g = round.guesses[id];
+      const g = round.guesses[pid];
 
       const dist = haversineDistMeters(
         round.lat,
@@ -216,9 +161,9 @@ io.on("connection", socket => {
 
       const points = scoreFromDistance(dist);
 
-      room.scores[id] = (room.scores[id] || 0) + points;
+      room.scores[pid] = (room.scores[pid] || 0) + points;
 
-      io.to(id).emit("roundResult", {
+      io.to(room.sockets[pid]).emit("roundResult", {
         correct: { lat: round.lat, lng: round.lng },
         distanceMeters: Math.round(dist),
         pointsAwarded: points,
@@ -233,12 +178,10 @@ io.on("connection", socket => {
       (room.pickerIndex + 1) % room.players.length;
 
     setTimeout(() => {
-
       io.to(data.roomId).emit("newRound", {
-        pickerSocketId: room.players[room.pickerIndex],
+        pickerSocketId: room.sockets[room.players[room.pickerIndex]],
         scores: room.scores
       });
-
     }, 1500);
 
     cb?.({ ok: true });
@@ -252,48 +195,43 @@ io.on("connection", socket => {
 
     for (const [roomId, room] of Object.entries(rooms)) {
 
-      if (!room.players.includes(socket.id)) continue;
+      if (!room.players.includes(playerId)) continue;
 
-      room.players = room.players.filter(id => id !== socket.id);
+      // ONLY remove socket, NOT player yet
+      delete room.sockets[playerId];
 
-      delete room.scores[socket.id];
+      // Give player 10 seconds to reconnect
+      setTimeout(() => {
 
-      delete room.usernames[socket.id];
+        // If they reconnected, skip removal
+        if (room.sockets[playerId]) return;
 
-      if (
-        room.currentRound &&
-        room.currentRound.pickerId === socket.id
-      ) {
-        room.currentRound = null;
-      }
+        console.log("Removing inactive player:", playerId);
 
-      if (room.players.length === 0) {
+        room.players = room.players.filter(p => p !== playerId);
 
-        delete rooms[roomId];
+        delete room.scores[playerId];
+        delete room.usernames[playerId];
 
-        continue;
+        if (room.players.length === 0) {
+          delete rooms[roomId];
+          return;
+        }
 
-      }
+        room.pickerIndex %= room.players.length;
 
-      room.pickerIndex %= room.players.length;
+        io.to(roomId).emit("playerLeft", {
+          playerId,
+          players: room.players,
+          usernames: room.usernames,
+          scores: room.scores,
+          pickerSocketId: room.sockets[room.players[room.pickerIndex]]
+        });
 
-      io.to(roomId).emit("playerLeft", {
-        socketId: socket.id,
-        players: room.players,
-        usernames: room.usernames,
-        scores: room.scores,
-        pickerSocketId: room.players[room.pickerIndex]
-      });
+      }, 10000); // reconnect window
 
     }
 
   });
 
 });
-
-// --- Start server ---
-const PORT = process.env.PORT || 3000;
-
-server.listen(PORT, () =>
-  console.log("Server listening on", PORT)
-);
