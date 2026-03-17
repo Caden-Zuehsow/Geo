@@ -361,12 +361,18 @@ joinBtn.onclick = () => {
     document.getElementById("lobbyControls").style.display="none";
   });
 };
-
 socket.on("roomJoined",data=>{
-  players=data.players;
-  scores=data.scores;
-  currentPickerId=data.pickerSocketId;
-  usernames=data.usernames || {};
+  players = data.players;
+  scores = data.scores;
+
+  // ✅ FIX: ensure picker is valid
+  currentPickerId = data.pickerSocketId || players[0] || null;
+
+  usernames = data.usernames || {};
+
+  console.log("My ID:", mySocketId);
+  console.log("Picker ID:", currentPickerId);
+
   updateLobbyUI();
   updateRolePanels();
 });
@@ -407,16 +413,26 @@ socket.on("roundResult",res=>{
 });
 
 socket.on("newRound",data=>{
-  currentPickerId=data.pickerSocketId;
-  scores=data.scores;
+  // ✅ FIX: ensure picker is valid
+  currentPickerId = data.pickerSocketId || players[0] || null;
+
+  scores = data.scores;
+
+  console.log("New Round Picker:", currentPickerId);
+
   resultPanel.style.display="none";
   guesserStreetViewDiv.innerHTML="Waiting for picker to pick spot...";
   guessResultDiv.innerHTML="";
-  if(guessMarker) guessMarker.setMap(null);
-  guessMap.setCenter({lat:20,lng:0}); guessMap.setZoom(2);
-  updateScoresUI(); updateRolePanels();
-});
 
+  if(guessMarker) guessMarker.setMap(null);
+
+  guessMap.setCenter({lat:20,lng:0});
+  guessMap.setZoom(2);
+
+  updateScoresUI();
+  updateRolePanels();
+});
+  
 function updateLobbyUI() {
   playersList.innerHTML = players
     .map(p => {
