@@ -1,3 +1,24 @@
+import express from "express";
+import http from "http";
+import { Server } from "socket.io";
+import cors from "cors";
+
+const app = express();
+app.use(cors());
+
+const server = http.createServer(app);
+
+const io = new Server(server, {
+  cors: {
+    origin: "*", // you can restrict later
+    methods: ["GET", "POST"]
+  }
+});
+
+// ---- your rooms object ----
+const rooms = {};
+const MAX_PLAYERS = 10;
+
 io.on("connection", socket => {
 
   const pid =
