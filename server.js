@@ -10,27 +10,63 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: {
-    origin: "*", // you can restrict later
+    origin: "*",
     methods: ["GET", "POST"]
   }
 });
 
-// ---- your rooms object ----
 const rooms = {};
 const MAX_PLAYERS = 10;
 
+// ---- Helpers ----
+function makeRoomId() {
+  return Math.random().toString(36).substring(2, 6).toUpperCase();
+}
+
+function randomWord() {
+  const words = ["Tiger", "Eagle", "Shark", "Wolf", "Panda", "Falcon"];
+  return words[Math.floor(Math.random() * words.length)];
+}
+
+function uniqueUsername(room) {
+  let name;
+  do {
+    name = randomWord();
+  } while (Object.values(room.usernames).includes(name));
+  return name;
+}
+
+function haversineDistMeters(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+  const toRad = x => x * Math.PI / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) *
+    Math.cos(toRad(lat2)) *
+    Math.sin(dLon / 2) ** 2;
+
+  return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function scoreFromDistance(d) {
+  return Math.max(0, Math.round(5000 * Math.exp(-d / 2000000)));
+}
+
+// ---- Socket Logic ----
 io.on("connection", socket => {
 
-  const pid =
-    socket.handshake.auth?.playerId || socket.id;
+  const pid = socket.handshake.auth?.playerId || socket.id;
 
   console.log("connected:", socket.id, "player:", pid);
 
-  // ---- Find existing room (reconnect case) ----
+  // ---- Reconnect ----
   let existingRoomId = null;
 
   for (const [roomId, room] of Object.entries(rooms)) {
-    if (room.players.includes(playerId)) {
+    if (room.players.includes(pid)) {
       existingRoomId = roomId;
       break;
     }
@@ -39,8 +75,7 @@ io.on("connection", socket => {
   if (existingRoomId) {
     const room = rooms[existingRoomId];
 
-    room.sockets[playerId] = socket.id;
-
+    room.sockets[pid] = socket.id;
     socket.join(existingRoomId);
 
     console.log("Reconnected to room:", existingRoomId);
@@ -54,27 +89,29 @@ io.on("connection", socket => {
     });
   }
 
-  // ---- Create room ----
+  // ---- Create Room ----
   socket.on("createRoom", cb => {
 
     const id = makeRoomId();
 
     rooms[id] = {
-      players: [playerId],
-      sockets: { [playerId]: socket.id },
-      usernames: { [playerId]: randomWord() },
-      scores: { [playerId]: 0 },
+      players: [pid],
+      sockets: { [pid]: socket.id },
+      usernames: { [pid]: randomWord() },
+      scores: { [pid]: 0 },
       pickerIndex: 0,
       currentRound: null
     };
 
     socket.join(id);
 
+    console.log("Room created:", id);
+
     cb({ ok: true, roomId: id });
 
   });
 
-  // ---- Join room ----
+  // ---- Join Room ----
   socket.on("joinRoom", (roomId, cb) => {
 
     const room = rooms[roomId];
@@ -84,14 +121,13 @@ io.on("connection", socket => {
     if (room.players.length >= MAX_PLAYERS)
       return cb({ ok: false, err: "Room full" });
 
-    // Prevent duplicate joins
-    if (!room.players.includes(playerId)) {
-      room.players.push(playerId);
-      room.scores[playerId] = 0;
-      room.usernames[playerId] = uniqueUsername(room);
+    if (!room.players.includes(pid)) {
+      room.players.push(pid);
+      room.scores[pid] = 0;
+      room.usernames[pid] = uniqueUsername(room);
     }
 
-    room.sockets[playerId] = socket.id;
+    room.sockets[pid] = socket.id;
 
     socket.join(roomId);
 
@@ -106,7 +142,7 @@ io.on("connection", socket => {
 
   });
 
-  // ---- Pick location ----
+  // ---- Pick Location ----
   socket.on("pickLocation", (data, cb) => {
 
     const room = rooms[data.roomId];
@@ -114,7 +150,7 @@ io.on("connection", socket => {
 
     const pickerId = room.players[room.pickerIndex];
 
-    if (playerId !== pickerId)
+    if (pid !== pickerId)
       return cb?.({ ok: false, err: "Not picker" });
 
     room.currentRound = {
@@ -124,9 +160,9 @@ io.on("connection", socket => {
       guesses: {}
     };
 
-    room.players.forEach(pid => {
-      if (pid !== pickerId) {
-        io.to(room.sockets[pid]).emit("startGuess", {
+    room.players.forEach(id => {
+      if (id !== pickerId) {
+        io.to(room.sockets[id]).emit("startGuess", {
           lat: data.lat,
           lng: data.lng,
           hint: data.hint || null
@@ -138,7 +174,7 @@ io.on("connection", socket => {
 
   });
 
-  // ---- Make guess ----
+  // ---- Make Guess ----
   socket.on("makeGuess", (data, cb) => {
 
     const room = rooms[data.roomId];
@@ -147,10 +183,10 @@ io.on("connection", socket => {
 
     const round = room.currentRound;
 
-    if (playerId === round.pickerId) return;
-    if (round.guesses[playerId]) return;
+    if (pid === round.pickerId) return;
+    if (round.guesses[pid]) return;
 
-    round.guesses[playerId] = {
+    round.guesses[pid] = {
       lat: data.lat,
       lng: data.lng
     };
@@ -164,9 +200,9 @@ io.on("connection", socket => {
       return;
     }
 
-    guessers.forEach(pid => {
+    guessers.forEach(id => {
 
-      const g = round.guesses[pid];
+      const g = round.guesses[id];
 
       const dist = haversineDistMeters(
         round.lat,
@@ -177,9 +213,9 @@ io.on("connection", socket => {
 
       const points = scoreFromDistance(dist);
 
-      room.scores[pid] = (room.scores[pid] || 0) + points;
+      room.scores[id] = (room.scores[id] || 0) + points;
 
-      io.to(room.sockets[pid]).emit("roundResult", {
+      io.to(room.sockets[id]).emit("roundResult", {
         correct: { lat: round.lat, lng: round.lng },
         distanceMeters: Math.round(dist),
         pointsAwarded: points,
@@ -211,23 +247,20 @@ io.on("connection", socket => {
 
     for (const [roomId, room] of Object.entries(rooms)) {
 
-      if (!room.players.includes(playerId)) continue;
+      if (!room.players.includes(pid)) continue;
 
-      // ONLY remove socket, NOT player yet
-      delete room.sockets[playerId];
+      delete room.sockets[pid];
 
-      // Give player 10 seconds to reconnect
       setTimeout(() => {
 
-        // If they reconnected, skip removal
-        if (room.sockets[playerId]) return;
+        if (room.sockets[pid]) return;
 
-        console.log("Removing inactive player:", playerId);
+        console.log("Removing inactive player:", pid);
 
-        room.players = room.players.filter(p => p !== playerId);
+        room.players = room.players.filter(p => p !== pid);
 
-        delete room.scores[playerId];
-        delete room.usernames[playerId];
+        delete room.scores[pid];
+        delete room.usernames[pid];
 
         if (room.players.length === 0) {
           delete rooms[roomId];
@@ -237,7 +270,7 @@ io.on("connection", socket => {
         room.pickerIndex %= room.players.length;
 
         io.to(roomId).emit("playerLeft", {
-          playerId,
+          playerId: pid,
           players: room.players,
           usernames: room.usernames,
           scores: room.scores,
@@ -248,10 +281,13 @@ io.on("connection", socket => {
 
     }
 
+  });
+
+});
+
+// ---- Start Server ----
 const PORT = process.env.PORT || 3000;
 
 server.listen(PORT, () => {
   console.log("Server running on port", PORT);
-});
-
 });
