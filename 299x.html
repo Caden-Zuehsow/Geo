@@ -33,7 +33,6 @@
     h2 {
       text-align:center;
       color:var(--accent);
-      margin-bottom:10px;
     }
 
     .panel {
@@ -109,7 +108,6 @@
       padding:6px;
       border-radius:6px;
       border:none;
-      margin-right:8px;
     }
 
     .controls {
@@ -138,7 +136,7 @@
     <option value="20978">Amphibians</option>
   </select>
 
-  <button id="startBtn">New Round</button>
+  <button id="startBtn">Start Round</button>
 </div>
 
 <div class="panel">
@@ -170,6 +168,7 @@ let marker;
 let score = 0;
 let correctAnswer = "";
 let attempts = 0;
+let answered = false;
 
 document.getElementById("startBtn").onclick = startRound;
 document.getElementById("filter").onchange = startRound;
@@ -180,6 +179,7 @@ function startRound() {
 }
 
 function newRound() {
+  answered = false;
   document.getElementById("result").textContent = "";
   document.getElementById("choices").innerHTML = "Loading...";
 
@@ -197,8 +197,8 @@ async function loadGame(lat, lng) {
   try {
     const filter = document.getElementById("filter").value;
 
-    // 🔴 LOCAL (10 miles ≈ 16 km)
-    let localURL = `https://api.inaturalist.org/v1/observations/species_counts?lat=${lat}&lng=${lng}&radius=16&per_page=50`;
+    // Puerto Rico species (correct pool)
+    let localURL = `https://api.inaturalist.org/v1/observations/species_counts?lat=${lat}&lng=${lng}&radius=25&per_page=20`;
     if (filter) localURL += `&taxon_id=${filter}`;
 
     const localRes = await fetch(localURL);
@@ -208,12 +208,6 @@ async function loadGame(lat, lng) {
       retryRound();
       return;
     }
-
-    const localSet = new Set(
-      localData.results.map(r =>
-        r.taxon?.preferred_common_name || r.taxon?.name
-      )
-    );
 
     const correct = localData.results[
       Math.floor(Math.random() * localData.results.length)
@@ -227,11 +221,11 @@ async function loadGame(lat, lng) {
 
     const taxonId = filter || correct.taxon.iconic_taxon_id;
 
-    // 🔴 ALL PR species (same group)
-    const otherRes = await fetch(
-      `https://api.inaturalist.org/v1/observations/species_counts?nelat=18.5&nelng=-65.2&swlat=17.8&swlng=-67.3&taxon_id=${taxonId}&per_page=100`
+    // 🔴 WRONG answers from Alaska (very different biome)
+    const wrongRes = await fetch(
+      `https://api.inaturalist.org/v1/observations/species_counts?place_id=6&taxon_id=${taxonId}&per_page=50`
     );
-    const otherData = await otherRes.json();
+    const wrongData = await wrongRes.json();
 
     const options = [];
 
@@ -241,7 +235,7 @@ async function loadGame(lat, lng) {
       correct: true
     });
 
-    for (let item of otherData.results) {
+    for (let item of wrongData.results) {
       const name =
         item.taxon?.preferred_common_name || item.taxon?.name;
 
@@ -251,7 +245,6 @@ async function loadGame(lat, lng) {
       if (
         name &&
         name !== correctAnswer &&
-        !localSet.has(name) &&
         !options.find(o => o.name === name)
       ) {
         options.push({
@@ -266,7 +259,7 @@ async function loadGame(lat, lng) {
 
     while (options.length < 4) {
       options.push({
-        name: "Rare/Unobserved Species",
+        name: "Unrelated Species",
         photo: "",
         correct: false
       });
@@ -311,7 +304,14 @@ function displayChoices(options) {
 }
 
 function checkAnswer(option) {
+  if (answered) return;
+  answered = true;
+
   const result = document.getElementById("result");
+
+  document.querySelectorAll(".choice").forEach(c => {
+    c.style.pointerEvents = "none";
+  });
 
   if (option.correct) {
     result.textContent = "✅ Correct!";
