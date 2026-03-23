@@ -27,7 +27,7 @@
 
     #container {
       width:100%;
-      max-width:800px;
+      max-width:900px;
     }
 
     h2 {
@@ -71,13 +71,14 @@
     }
 
     .choice {
-      width:180px;
+      width:150px;
       background:#0f2442;
       border-radius:10px;
-      padding:8px;
+      padding:6px;
       text-align:center;
       cursor:pointer;
       transition:transform 0.15s ease, background 0.2s;
+      font-size:0.9rem;
     }
 
     .choice:hover {
@@ -87,10 +88,10 @@
 
     .choice img {
       width:100%;
-      height:120px;
+      height:90px;
       object-fit:cover;
       border-radius:6px;
-      margin-bottom:6px;
+      margin-bottom:4px;
     }
 
     #result {
@@ -137,7 +138,7 @@
     <option value="20978">Amphibians</option>
   </select>
 
-  <button id="startBtn">Start Round</button>
+  <button id="startBtn">New Round</button>
 </div>
 
 <div class="panel">
@@ -196,7 +197,8 @@ async function loadGame(lat, lng) {
   try {
     const filter = document.getElementById("filter").value;
 
-    let localURL = `https://api.inaturalist.org/v1/observations/species_counts?lat=${lat}&lng=${lng}&radius=25&per_page=20`;
+    // 🔴 LOCAL (10 miles ≈ 16 km)
+    let localURL = `https://api.inaturalist.org/v1/observations/species_counts?lat=${lat}&lng=${lng}&radius=16&per_page=50`;
     if (filter) localURL += `&taxon_id=${filter}`;
 
     const localRes = await fetch(localURL);
@@ -207,15 +209,27 @@ async function loadGame(lat, lng) {
       return;
     }
 
-    const correct = localData.results[Math.floor(Math.random() * localData.results.length)];
+    const localSet = new Set(
+      localData.results.map(r =>
+        r.taxon?.preferred_common_name || r.taxon?.name
+      )
+    );
 
-    correctAnswer = correct.taxon.preferred_common_name || correct.taxon.name;
-    const correctPhoto = correct.taxon.default_photo?.medium_url || "";
+    const correct = localData.results[
+      Math.floor(Math.random() * localData.results.length)
+    ];
+
+    correctAnswer =
+      correct.taxon.preferred_common_name || correct.taxon.name;
+
+    const correctPhoto =
+      correct.taxon.default_photo?.medium_url || "";
 
     const taxonId = filter || correct.taxon.iconic_taxon_id;
 
+    // 🔴 ALL PR species (same group)
     const otherRes = await fetch(
-      `https://api.inaturalist.org/v1/observations/species_counts?nelat=18.5&nelng=-65.2&swlat=17.8&swlng=-67.3&taxon_id=${taxonId}&per_page=50`
+      `https://api.inaturalist.org/v1/observations/species_counts?nelat=18.5&nelng=-65.2&swlat=17.8&swlng=-67.3&taxon_id=${taxonId}&per_page=100`
     );
     const otherData = await otherRes.json();
 
@@ -228,10 +242,18 @@ async function loadGame(lat, lng) {
     });
 
     for (let item of otherData.results) {
-      const name = item.taxon?.preferred_common_name || item.taxon?.name;
-      const photo = item.taxon?.default_photo?.medium_url || "";
+      const name =
+        item.taxon?.preferred_common_name || item.taxon?.name;
 
-      if (name && name !== correctAnswer && !options.find(o => o.name === name)) {
+      const photo =
+        item.taxon?.default_photo?.medium_url || "";
+
+      if (
+        name &&
+        name !== correctAnswer &&
+        !localSet.has(name) &&
+        !options.find(o => o.name === name)
+      ) {
         options.push({
           name: name,
           photo: photo,
@@ -244,7 +266,7 @@ async function loadGame(lat, lng) {
 
     while (options.length < 4) {
       options.push({
-        name: "Unknown Species",
+        name: "Rare/Unobserved Species",
         photo: "",
         correct: false
       });
