@@ -10,6 +10,17 @@
 
 <h2>BioGuessr — Puerto Rico</h2>
 
+<label>Filter:</label>
+<select id="filter">
+  <option value="">All</option>
+  <option value="3">Birds</option>
+  <option value="47126">Plants</option>
+  <option value="47158">Insects</option>
+  <option value="40151">Mammals</option>
+  <option value="26036">Reptiles</option>
+  <option value="20978">Amphibians</option>
+</select>
+
 <button id="startBtn">Start Round</button>
 
 <div id="map" style="width:100%; height:400px;"></div>
@@ -33,10 +44,12 @@ L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/
 let marker;
 let score = 0;
 let correctAnswer = "";
+let correctPhoto = "";
 let attempts = 0;
 
 // Start button
 document.getElementById("startBtn").onclick = startRound;
+document.getElementById("filter").onchange = startRound;
 
 function startRound() {
   attempts = 0;
@@ -57,13 +70,15 @@ function newRound() {
   loadGame(lat, lng);
 }
 
-// Main game logic
 async function loadGame(lat, lng) {
   try {
-    // Get species at location
-    const localRes = await fetch(
-      `https://api.inaturalist.org/v1/observations/species_counts?lat=${lat}&lng=${lng}&radius=25&per_page=20`
-    );
+    const filter = document.getElementById("filter").value;
+
+    // Local species
+    let localURL = `https://api.inaturalist.org/v1/observations/species_counts?lat=${lat}&lng=${lng}&radius=25&per_page=20`;
+    if (filter) localURL += `&taxon_id=${filter}`;
+
+    const localRes = await fetch(localURL);
     const localData = await localRes.json();
 
     if (!localData.results || localData.results.length < 4) {
@@ -71,7 +86,6 @@ async function loadGame(lat, lng) {
       return;
     }
 
-    // Pick correct species
     const correct = localData.results[
       Math.floor(Math.random() * localData.results.length)
     ];
@@ -84,14 +98,12 @@ async function loadGame(lat, lng) {
     correctAnswer =
       correct.taxon.preferred_common_name || correct.taxon.name;
 
-    const taxonId = correct.taxon.iconic_taxon_id;
+    correctPhoto =
+      correct.taxon.default_photo?.medium_url || "";
 
-    if (!taxonId) {
-      retryRound();
-      return;
-    }
+    const taxonId = filter || correct.taxon.iconic_taxon_id;
 
-    // Get similar species across Puerto Rico (bounding box)
+    // Get similar species across PR
     const otherRes = await fetch(
       `https://api.inaturalist.org/v1/observations/species_counts?nelat=18.5&nelng=-65.2&swlat=17.8&swlng=-67.3&taxon_id=${taxonId}&per_page=50`
     );
@@ -102,28 +114,49 @@ async function loadGame(lat, lng) {
       return;
     }
 
-    // Build wrong answers safely
-    const wrongAnswers = [];
+    const options = [];
 
+    // Add correct first
+    options.push({
+      name: correctAnswer,
+      photo: correctPhoto,
+      correct: true
+    });
+
+    // Add wrong answers
     for (let item of otherData.results) {
       const name =
         item.taxon?.preferred_common_name || item.taxon?.name;
 
-      if (name && name !== correctAnswer && !wrongAnswers.includes(name)) {
-        wrongAnswers.push(name);
+      const photo =
+        item.taxon?.default_photo?.medium_url || "";
+
+      if (
+        name &&
+        name !== correctAnswer &&
+        !options.find(o => o.name === name)
+      ) {
+        options.push({
+          name: name,
+          photo: photo,
+          correct: false
+        });
       }
 
-      if (wrongAnswers.length >= 3) break;
+      if (options.length >= 4) break;
     }
 
-    // Fallback if not enough
-    while (wrongAnswers.length < 3) {
-      wrongAnswers.push("Unknown Species");
+    // Fill fallback if needed
+    while (options.length < 4) {
+      options.push({
+        name: "Unknown Species",
+        photo: "",
+        correct: false
+      });
     }
 
-    // Combine & shuffle
-    const options = [correctAnswer, ...wrongAnswers]
-      .sort(() => Math.random() - 0.5);
+    // Shuffle
+    options.sort(() => Math.random() - 0.5);
 
     displayChoices(options);
 
@@ -133,24 +166,30 @@ async function loadGame(lat, lng) {
   }
 }
 
-// Retry logic (prevents infinite loop)
 function retryRound() {
   attempts++;
   if (attempts > 5) {
-    document.getElementById("choices").textContent = "Could not load data. Try again.";
+    document.getElementById("choices").textContent = "Could not load data.";
     return;
   }
   newRound();
 }
 
-// Display buttons
+// Display with images
 function displayChoices(options) {
   const container = document.getElementById("choices");
   container.innerHTML = "";
 
   options.forEach(option => {
     const btn = document.createElement("button");
-    btn.textContent = option;
+
+    btn.style.display = "block";
+    btn.style.marginBottom = "10px";
+
+    btn.innerHTML = `
+      ${option.photo ? `<img src="${option.photo}" width="100"><br>` : ""}
+      ${option.name}
+    `;
 
     btn.onclick = () => checkAnswer(option);
 
@@ -159,10 +198,10 @@ function displayChoices(options) {
 }
 
 // Check answer
-function checkAnswer(selected) {
+function checkAnswer(option) {
   const result = document.getElementById("result");
 
-  if (selected === correctAnswer) {
+  if (option.correct) {
     result.textContent = "✅ Correct!";
     score += 100;
   } else {
