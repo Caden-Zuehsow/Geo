@@ -1,0 +1,108 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Puerto Rico Species Viewer</title>
+</head>
+<body>
+
+<h2>Puerto Rico Street View + Species</h2>
+
+<select id="filter">
+  <option value="">All</option>
+  <option value="3">Birds</option>
+  <option value="47126">Plants</option>
+  <option value="47158">Insects</option>
+</select>
+
+<button id="startBtn">New Location</button>
+
+<div id="streetView" style="width:100%;height:300px;"></div>
+
+<h3>Species Nearby</h3>
+<ul id="speciesList"></ul>
+
+<script async
+src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=geometry&callback=init">
+</script>
+
+<script>
+function init() {
+  let panorama;
+
+  document.getElementById("startBtn").onclick = loadLocation;
+  document.getElementById("filter").onchange = loadLocation;
+
+  function getRandomPR(callback) {
+    const sv = new google.maps.StreetViewService();
+
+    function tryLoc() {
+      const lat = 17.8 + Math.random() * (18.5 - 17.8);
+      const lng = -67.3 + Math.random() * (-65.2 + 67.3);
+
+      const latLng = new google.maps.LatLng(lat, lng);
+
+      sv.getPanorama({ location: latLng, radius: 50000 }, (data, status) => {
+        if (status === "OK") {
+          callback(data.location.latLng);
+        } else {
+          tryLoc();
+        }
+      });
+    }
+
+    tryLoc();
+  }
+
+  async function getSpecies(lat, lng) {
+    const filter = document.getElementById("filter").value;
+
+    let url = `https://api.inaturalist.org/v1/observations/species_counts?lat=${lat}&lng=${lng}&radius=25&per_page=15`;
+
+    if (filter) {
+      url += `&taxon_id=${filter}`;
+    }
+
+    const res = await fetch(url);
+    const data = await res.json();
+
+    return data.results.map(r => {
+      return r.taxon.preferred_common_name || r.taxon.name;
+    });
+  }
+
+  function loadLocation() {
+    getRandomPR(latLng => {
+
+      panorama = new google.maps.StreetViewPanorama(
+        document.getElementById("streetView"),
+        {
+          position: latLng,
+          pov: { heading: 0, pitch: 0 },
+          zoom: 1
+        }
+      );
+
+      getSpecies(latLng.lat(), latLng.lng()).then(species => {
+        const list = document.getElementById("speciesList");
+        list.innerHTML = "";
+
+        if (species.length === 0) {
+          list.innerHTML = "<li>No species found</li>";
+          return;
+        }
+
+        species.forEach(s => {
+          const li = document.createElement("li");
+          li.textContent = s;
+          list.appendChild(li);
+        });
+      });
+
+    });
+  }
+}
+</script>
+
+</body>
+</html> 
