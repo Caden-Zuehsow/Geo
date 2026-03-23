@@ -33,11 +33,17 @@ L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/
 let marker;
 let score = 0;
 let correctAnswer = "";
+let attempts = 0;
 
 // Start button
 document.getElementById("startBtn").onclick = startRound;
 
 function startRound() {
+  attempts = 0;
+  newRound();
+}
+
+function newRound() {
   document.getElementById("result").textContent = "";
   document.getElementById("choices").innerHTML = "Loading...";
 
@@ -60,8 +66,8 @@ async function loadGame(lat, lng) {
     );
     const localData = await localRes.json();
 
-    if (localData.results.length < 4) {
-      startRound(); // retry if not enough data
+    if (!localData.results || localData.results.length < 4) {
+      retryRound();
       return;
     }
 
@@ -70,28 +76,50 @@ async function loadGame(lat, lng) {
       Math.floor(Math.random() * localData.results.length)
     ];
 
+    if (!correct.taxon) {
+      retryRound();
+      return;
+    }
+
     correctAnswer =
       correct.taxon.preferred_common_name || correct.taxon.name;
 
-    const taxonId = correct.taxon.ancestor_ids[1]; // broad group (birds, plants, etc.)
+    const taxonId = correct.taxon.iconic_taxon_id;
 
-    // Get similar species from elsewhere in Puerto Rico
+    if (!taxonId) {
+      retryRound();
+      return;
+    }
+
+    // Get similar species across Puerto Rico (bounding box)
     const otherRes = await fetch(
-      `https://api.inaturalist.org/v1/observations/species_counts?place_id=6985&taxon_id=${taxonId}&per_page=50`
+      `https://api.inaturalist.org/v1/observations/species_counts?nelat=18.5&nelng=-65.2&swlat=17.8&swlng=-67.3&taxon_id=${taxonId}&per_page=50`
     );
     const otherData = await otherRes.json();
 
-    // Build wrong answers
+    if (!otherData.results) {
+      retryRound();
+      return;
+    }
+
+    // Build wrong answers safely
     const wrongAnswers = [];
 
-    otherData.results.forEach(item => {
+    for (let item of otherData.results) {
       const name =
-        item.taxon.preferred_common_name || item.taxon.name;
+        item.taxon?.preferred_common_name || item.taxon?.name;
 
-      if (name !== correctAnswer && wrongAnswers.length < 3) {
+      if (name && name !== correctAnswer && !wrongAnswers.includes(name)) {
         wrongAnswers.push(name);
       }
-    });
+
+      if (wrongAnswers.length >= 3) break;
+    }
+
+    // Fallback if not enough
+    while (wrongAnswers.length < 3) {
+      wrongAnswers.push("Unknown Species");
+    }
 
     // Combine & shuffle
     const options = [correctAnswer, ...wrongAnswers]
@@ -103,6 +131,16 @@ async function loadGame(lat, lng) {
     console.error(err);
     document.getElementById("choices").textContent = "Error loading data";
   }
+}
+
+// Retry logic (prevents infinite loop)
+function retryRound() {
+  attempts++;
+  if (attempts > 5) {
+    document.getElementById("choices").textContent = "Could not load data. Try again.";
+    return;
+  }
+  newRound();
 }
 
 // Display buttons
