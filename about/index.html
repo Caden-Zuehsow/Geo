@@ -21,19 +21,90 @@
       --panel-border: #0A1630;
     }
 
+    * { box-sizing: border-box; }
+
     body {
       font-family: system-ui, Arial;
       margin: 0;
-      padding: 20px;
+      padding: 0;
       background: var(--bg);
-      display: flex;
-      justify-content: center;
       color: var(--text-light);
     }
 
+    /* ===== HEADER ===== */
+    header {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: transparent;
+      z-index: 1000;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+
+    .logo-container img {
+      height: 40px;
+    }
+
+    .home-text {
+      font-weight: 600;
+      color: white;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+      font-size: 0.95rem;
+    }
+
+    nav {
+      display: flex;
+      gap: 18px;
+    }
+
+    nav a {
+      text-decoration: none;
+      color: white;
+      font-weight: 700;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+      font-size: 0.95rem;
+    }
+
+    .menu-toggle {
+      display: none;
+      font-size: 1.6rem;
+      color: white;
+      cursor: pointer;
+    }
+
+    @media (max-width: 768px) {
+      nav {
+        position: absolute;
+        top: 60px;
+        right: 20px;
+        background: var(--panel);
+        border-radius: 10px;
+        padding: 10px;
+        flex-direction: column;
+        gap: 10px;
+        display: none;
+      }
+
+      nav.active { display: flex; }
+      .menu-toggle { display: block; }
+    }
+
+    /* ===== CONTENT ===== */
     #container {
       width: 100%;
       max-width: 600px;
+      margin: 0 auto;
+      padding: 100px 20px 30px;
     }
 
     #logo {
@@ -69,13 +140,6 @@
       font-weight: 600;
     }
 
-    .footer {
-      text-align: center;
-      font-size: 0.9rem;
-      opacity: 0.8;
-      margin-top: 10px;
-    }
-
     a {
       color: var(--text-accent);
       text-decoration: none;
@@ -85,111 +149,138 @@
     a:hover {
       text-decoration: underline;
     }
+
+    footer {
+      text-align: center;
+      margin-top: 30px;
+      font-size: 0.9rem;
+      color: #CFCFCF;
+    }
+
+    .footer-links a {
+      color: #9bb5ff;
+      text-decoration: none;
+      font-weight: 600;
+    }
   </style>
+
+  <script>
+    function toggleMenu() {
+      document.getElementById("navMenu").classList.toggle("active");
+    }
+  </script>
 </head>
 
 <body>
-  <div id="container">
+
+<!-- HEADER -->
+<header>
+  <a href="/" class="logo-container">
+    <img src="/geofavicon/logo.png">
+    <span class="home-text">Home</span>
+  </a>
+
+  <div class="menu-toggle" onclick="toggleMenu()">☰</div>
+
+  <nav id="navMenu">
+    <a href="/public/">Multiplayer</a>
+    <a href="/solo/">Single Player</a>
+    <a href="/socials/">Social</a>
+    <a href="/about/">About Us</a>
+  </nav>
+</header>
+
+<div id="container">
 
 <a href="/">
   <img id="logo" src="/geofavicon/logo.png" alt="GeoBrawl Logo">
 </a>
 
+<h1>About GeoBrawl</h1>
 
-    <h1>About GeoBrawl</h1>
-
-    <div class="panel">
-      <p>
-        <span class="highlight">GeoBrawl</span> is a fast paced multiplayer geography game
-        that blends <b>maps</b>, <b>Street View</b>, and <b>real time competition</b>.
-        One player secretly chooses a real world Street View location, while the other
-        races to pinpoint where it is on the map.
-      </p>
-
-      <p>
-        Each guess the picker picks the location for everyone else to guess and the picker role is rotated in 
-        turns until everyone has been thepicker and the round is complete. 
-      </p>
-    </div>
-
-
-    <div class="panel" style="text-align:center;">
-  <h3 style="color:var(--text-accent); margin-top:0;">Ready to Play?</h3>
+<div class="panel">
   <p>
-    Go to Home Page
+    <span class="highlight">GeoBrawl</span> is a fast paced multiplayer geography game
+    that blends <b>maps</b>, <b>Street View</b>, and <b>real time competition</b>.
+    One player secretly chooses a real world Street View location, while the other
+    races to pinpoint where it is on the map.
   </p>
+
+  <p>
+    Each guess the picker picks the location for everyone else to guess and the picker role is rotated in 
+    turns until everyone has been thepicker and the round is complete. 
+  </p>
+</div>
+
+<div class="panel" style="text-align:center;">
+  <h3 style="color:var(--text-accent); margin-top:0;">Ready to Play?</h3>
+  <p>Go to Home Page</p>
   <p style="margin-top:12px;">
-    <a href="/" style="
-      background:#4A90D6;
-      color:white;
-      padding:10px 18px;
-      border-radius:8px;
-      display:inline-block;
-      text-decoration:none;
-      font-weight:600;
-    ">
+    <a href="/" style="background:#4A90D6;color:white;padding:10px 18px;border-radius:8px;display:inline-block;text-decoration:none;font-weight:600;">
       ▶ Play GeoBrawl Now
     </a>
   </p>
 </div>
-    <div class="panel">
-      <h3 style="color:var(--text-accent)">Why GeoBrawl?</h3>
-      <p>
-        GeoBrawl was created to make geography more interactive and social.
-        Instead of just solo guessing, players <b>compete live</b>, Unlike GeoGussr 
-        a lot of this games strategy is picking the location which adds a whole new 
-        element to the game.
 
-        Though we do have a single player mode that acts similarily to GeoGuessr.
-      </p>
-
-      <p>
-        It’s easy to start, works directly in your browser, and is designed for quick matches
-        with friends - no downloads required.
-      </p>
-    </div>
-
-    <div class="panel">
-      <h3 style="color:var(--text-accent)">How It Works</h3>
-      <p>
-        • Create or join a private room<br>
-        • One player becomes the <b>Picker</b> and selects a Street View spot<br>
-        • The other player becomes the <b>Guesser</b> and places a map pin<br>
-        • Points are awarded based on distance<br>
-        • Roles rotate each turn
-      </p>
-    </div>
-
-    <div class="panel">
-      <h3 style="color:var(--text-accent)">Built For the Web</h3>
-      <p>
-        GeoBrawl runs entirely in the browser using modern web technologies,
-        real time multiplayer sockets, and interactive maps.
-        It works best on desktop Google Chrome though it still works on mobile.
-      </p>
-    </div>
-    <div class="panel">
-  <h3 style="color:var(--text-accent)">Looking for GeoGuessr Alternatives?</h3>
+<div class="panel">
+  <h3 style="color:var(--text-accent)">Why GeoBrawl?</h3>
   <p>
-    If you're comparing <b>GeoBrawl</b> to 
-    <b>GeoGuessr</b> and other geography games, 
-    we’ve created a detailed breakdown of features, pricing, 
-    and gameplay differences.
+    GeoBrawl was created to make geography more interactive and social.
+    Instead of just solo guessing, players <b>compete live</b>, Unlike GeoGussr 
+    a lot of this games strategy is picking the location which adds a whole new 
+    element to the game.
+
+    Though we do have a single player mode that acts similarily to GeoGuessr.
   </p>
 
   <p>
-    See why many players consider 
-    <span class="highlight">GeoBrawl the best GeoGuessr alternative</span> 
-    for competitive strategy and browser-based gameplay.
+    It’s easy to start, works directly in your browser, and is designed for quick matches
+    with friends - no downloads required.
+  </p>
+</div>
+
+<div class="panel">
+  <h3 style="color:var(--text-accent)">How It Works</h3>
+  <p>
+    • Create or join a private room<br>
+    • One player becomes the <b>Picker</b> and selects a Street View spot<br>
+    • The other player becomes the <b>Guesser</b> and places a map pin<br>
+    • Points are awarded based on distance<br>
+    • Roles rotate each turn
+  </p>
+</div>
+
+<div class="panel">
+  <h3 style="color:var(--text-accent)">Built For the Web</h3>
+  <p>
+    GeoBrawl runs entirely in the browser using modern web technologies,
+    real time multiplayer sockets, and interactive maps.
+    It works best on desktop Google Chrome though it still works on mobile.
+  </p>
+</div>
+
+<div class="panel">
+  <h3 style="color:var(--text-accent)">Looking for GeoGuessr Alternatives?</h3>
+  <p>
+    If you're comparing <b>GeoBrawl</b> to <b>GeoGuessr</b>, we’ve created a detailed breakdown.
   </p>
 
   <p style="text-align:center; margin-top:12px;">
     <a href="https://geobrawl.com/best-geoguessr-alternatives/">
-      → View the Full GeoGuessr Comparison Guide
+      → View the Full Comparison Guide
     </a>
   </p>
 </div>
 
+<!-- FOOTER -->
+<footer>
+  <div class="footer-links">
+    <a href="/privacy/">Privacy Policy & Terms of Service</a>
   </div>
+  <p>Website by Mahlan Media Webservices</p>
+</footer>
+
+</div>
+
 </body>
 </html>
