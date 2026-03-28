@@ -36,6 +36,80 @@
     --button-hover: #2F6CB0;
   }
 
+/* ===== HEADER ===== */
+header {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  padding: 10px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: transparent;
+  z-index: 1000;
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+}
+
+.logo-container img {
+  height: 40px;
+}
+
+.home-text {
+  font-weight: 600;
+  color: white;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+  font-size: 0.95rem;
+}
+
+nav {
+  display: flex;
+  gap: 18px;
+}
+
+nav a {
+  text-decoration: none;
+  color: white;
+  font-weight: 700;
+  text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+  font-size: 0.95rem;
+}
+
+.menu-toggle {
+  display: none;
+  font-size: 1.6rem;
+  color: white;
+  cursor: pointer;
+}
+
+/* Mobile nav */
+@media (max-width: 768px) {
+  nav {
+    position: absolute;
+    top: 60px;
+    right: 20px;
+    background: var(--panel);
+    border-radius: 10px;
+    padding: 10px;
+    flex-direction: column;
+    gap: 10px;
+    display: none;
+  }
+
+  nav.active { display: flex; }
+  .menu-toggle { display: block; }
+}
+
+/* FIX overlap issue */
+body {
+  padding-top: 80px;
+}
+  
   body {
     font-family: system-ui, Arial;
     margin:0;
@@ -175,12 +249,41 @@
 #playersList li {
   padding: 4px 0;
 }
+.site-footer {
+  text-align: center;
+  margin-top: 40px;
+  padding-bottom: 20px;
+  font-size: 0.9rem;
+  color: #CFCFCF;
+}
 
+.site-footer a {
+  color: #9bb5ff;
+  text-decoration: none;
+  font-weight: 600;
+}
 </style>
 </head>
 
-<body>
 
+  <!-- Result --><body>
+<header>
+  <a href="/" class="logo-container">
+    <img src="/geofavicon/logo.png" alt="GeoBrawl Logo">
+    <span class="home-text">Home</span>
+  </a>
+
+  <div class="menu-toggle" onclick="toggleMenu()">☰</div>
+
+  
+  <nav id="navMenu">
+    <a href="/public/">Multiplayer</a>
+    <a href="/solo/">Single Player</a>
+    <a href="/socials/">Social</a>
+    <a href="/about/">About Us</a>
+  </nav>
+</header>
+  
 <div id="left"><a href="/">
   
   <img id="logo" src="/geofavicon/logo.png" alt="GeoBrawl Logo">
@@ -234,12 +337,15 @@
     <button id="submitGuessBtn" disabled>Submit Guess</button>
   </div>
 
-  <!-- Result -->
   <div class="panel" id="resultPanel" style="display:none;">
     <h3 style="color:var(--text-accent)">Round Result</h3>
     <div id="resultText"></div>
   </div>
+</div> <!-- end of #left -->
 
+<div class="site-footer">
+  <a href="/privacy/">Privacy Policy & Terms</a>
+  <p>Website by Mahlan Media Webservices</p>
 </div>
 
 <!-- Google Maps -->
