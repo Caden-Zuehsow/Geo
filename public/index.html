@@ -107,25 +107,23 @@ nav a {
 
 /* FIX overlap issue */
 body {
-  padding-top: 80px;
+  font-family: system-ui, Arial;
+  margin: 0;
+  background: var(--bg);
+  color: var(--text-light);
+
+  display: flex;
+  flex-direction: column;   /* KEY */
+  min-height: 100vh;        /* KEY */
 }
   
-  body {
-    font-family: system-ui, Arial;
-    margin:0;
-    padding:20px;
-    background: var(--bg);
-    display:flex;
-    justify-content:center;
-    color: var(--text-light);
-  }
-
-  /* LEFT PANEL (Main content area) */
-  #left {
-    width: 100%;
-    max-width: 500px;
-  }
-
+#left {
+  width: 100%;
+  max-width: 500px;
+  margin: 0 auto;           /* centers it */
+  flex: 1;                  /* pushes footer down */
+}
+  
   #logo {
     width: 160px;
     height: auto;
@@ -251,8 +249,7 @@ body {
 }
 .site-footer {
   text-align: center;
-  margin-top: 40px;
-  padding-bottom: 20px;
+  padding: 20px 0;
   font-size: 0.9rem;
   color: #CFCFCF;
 }
