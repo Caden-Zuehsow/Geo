@@ -35,9 +35,7 @@
       --button: #4A90D6;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       font-family: system-ui, Arial, sans-serif;
@@ -62,7 +60,7 @@
     }
 
     .logo {
-      font-weight: 400; /* UNBOLDED */
+      font-weight: 500; /* slightly less bold */
       font-size: 1.2rem;
       color: white;
       text-decoration: none;
@@ -77,7 +75,7 @@
     nav a {
       text-decoration: none;
       color: white;
-      font-weight: 700; /* BOLD for nav links */
+      font-weight: 700;
       text-shadow: 0 2px 6px rgba(0,0,0,0.6);
       white-space: nowrap;
       font-size: 0.95rem;
@@ -105,13 +103,9 @@
         display: none;
       }
 
-      nav.active {
-        display: flex;
-      }
+      nav.active { display: flex; }
 
-      .menu-toggle {
-        display: block;
-      }
+      .menu-toggle { display: block; }
     }
 
     /* ===== CONTENT ===== */
@@ -168,12 +162,56 @@
       text-decoration: none;
       font-weight: 600;
     }
+
+    /* ===== COOKIE CONSENT ===== */
+    #cookie-banner {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1A355F;
+      color: white;
+      padding: 15px 20px;
+      border-radius: 10px;
+      font-size: 0.9rem;
+      display: flex;
+      gap: 15px;
+      align-items: center;
+      z-index: 2000;
+      max-width: 400px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    }
+
+    #cookie-banner button {
+      background: var(--ocean);
+      border: none;
+      color: white;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    #cookie-banner button:hover {
+      background: #2f6cb0;
+    }
   </style>
 
   <script>
     function toggleMenu() {
       document.getElementById("navMenu").classList.toggle("active");
     }
+
+    function acceptCookies() {
+      localStorage.setItem('cookiesAccepted', 'true');
+      document.getElementById('cookie-banner').style.display = 'none';
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      if (!localStorage.getItem('cookiesAccepted')) {
+        document.getElementById('cookie-banner').style.display = 'flex';
+      }
+    });
 
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/service-worker.js");
@@ -185,7 +223,7 @@
 
   <!-- HEADER -->
   <header>
-    <a href="/" class="logo">Home</a>
+    <a href="/" class="logo"><img src="/geofavicon/logo.png" alt="GeoBrawl" style="height:30px; vertical-align:middle;"></a>
 
     <div class="menu-toggle" onclick="toggleMenu()">☰</div>
 
@@ -193,14 +231,12 @@
       <a href="/public/index.html">Multiplayer</a>
       <a href="/solo/index.html">Single Player</a>
       <a href="/socials/index.html">Social</a>
-      <a href="/about/index.html">About Us</a>
+      <a href="/privacy/index.html">Privacy Policy</a>
     </nav>
   </header>
 
   <!-- CONTENT -->
   <div class="content">
-    <img id="logo-img" src="/geofavicon/logo.png" alt="GeoBrawl Logo">
-
     <h1>GeoBrawl</h1>
     <p>GeoBrawl lets you and your friends choose each others guessing location</p>
 
@@ -209,10 +245,16 @@
 
     <footer>
       <div class="footer-links">
-        <a href="/about/index.html">About Us</a>
+        <a href="/privacy/index.html">Privacy Policy</a>
       </div>
       <p>Website by Mahlan Media Webservices</p>
     </footer>
+  </div>
+
+  <!-- COOKIE BANNER -->
+  <div id="cookie-banner" style="display:none;">
+    🍪 This website uses cookies for analytics and ads. 
+    <button onclick="acceptCookies()">Accept</button>
   </div>
 
 </body>
