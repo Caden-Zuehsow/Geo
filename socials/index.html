@@ -19,7 +19,7 @@
     }
 
     * {
-      box-sizing: border-box; /* FIXES HEADER OVERFLOW */
+      box-sizing: border-box;
     }
 
     body {
@@ -44,7 +44,7 @@
     }
 
     .logo {
-      font-weight: 700;
+      font-weight: 400; /* unbolded Home */
       font-size: 1.2rem;
       color: white;
       text-decoration: none;
@@ -55,17 +55,46 @@
     nav {
       display: flex;
       gap: 16px;
-      flex-wrap: wrap; /* prevents cutoff */
+      flex-wrap: wrap;
       justify-content: flex-end;
     }
 
     nav a {
       text-decoration: none;
       color: white;
-      font-weight: 500;
+      font-weight: 700; /* bold nav links */
       text-shadow: 0 2px 6px rgba(0,0,0,0.6);
       white-space: nowrap;
       font-size: 0.95rem;
+    }
+
+    .menu-toggle {
+      display: none;
+      font-size: 1.6rem;
+      color: white;
+      cursor: pointer;
+    }
+
+    @media (max-width: 768px) {
+      nav {
+        position: absolute;
+        top: 60px;
+        right: 20px;
+        background: #1A355F;
+        border-radius: 10px;
+        padding: 10px;
+        flex-direction: column;
+        gap: 10px;
+        display: none;
+      }
+
+      nav.active {
+        display: flex;
+      }
+
+      .menu-toggle {
+        display: block;
+      }
     }
 
     /* ===== CONTENT ===== */
@@ -129,7 +158,6 @@
       color: #cfdcff;
     }
 
-    /* ===== PROMO ===== */
     .promo {
       margin-top: 35px;
       padding: 18px;
@@ -151,10 +179,13 @@
   <!-- HEADER -->
   <header>
     <a href="/" class="logo">Home</a>
-    <nav>
+
+    <div class="menu-toggle" onclick="toggleMenu()">☰</div>
+
+    <nav id="navMenu">
       <a href="/public/index.html">Multiplayer</a>
       <a href="/solo/index.html">Single Player</a>
-      <a href="/socials.html">Social</a>
+      <a href="/socials/index.html">Social</a>
       <a href="/about/index.html">About Us</a>
     </nav>
   </header>
@@ -204,5 +235,20 @@
     </footer>
   </div>
 
+  <script>
+    function toggleMenu() {
+      document.getElementById("navMenu").classList.toggle("active");
+    }
+
+    // Close mobile menu when link is clicked
+    document.querySelectorAll("#navMenu a").forEach(link => {
+      link.addEventListener("click", () => {
+        document.getElementById("navMenu").classList.remove("active");
+      });
+    });
+  </script>
+
+</body>
+</html>
 </body>
 </html>
