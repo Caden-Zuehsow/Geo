@@ -5,10 +5,9 @@
   <title>GeoBrawl — Socials</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <!-- Favicon -->
   <link rel="icon" href="/geofavicon/favicon.ico">
 
-  <!-- Icons (Font Awesome) -->
+  <!-- Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 
   <style>
@@ -17,6 +16,10 @@
       --background: #11284B;
       --panel: #1A355F;
       --text: #E8E8E8;
+    }
+
+    * {
+      box-sizing: border-box; /* FIXES HEADER OVERFLOW */
     }
 
     body {
@@ -46,21 +49,23 @@
       color: white;
       text-decoration: none;
       text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+      flex-shrink: 0;
     }
 
     nav {
       display: flex;
-      flex-wrap: wrap;
+      gap: 16px;
+      flex-wrap: wrap; /* prevents cutoff */
       justify-content: flex-end;
     }
 
     nav a {
-      margin-left: 18px;
       text-decoration: none;
       color: white;
       font-weight: 500;
       text-shadow: 0 2px 6px rgba(0,0,0,0.6);
       white-space: nowrap;
+      font-size: 0.95rem;
     }
 
     /* ===== CONTENT ===== */
@@ -91,7 +96,6 @@
     .social-card {
       display: flex;
       align-items: center;
-      justify-content: flex-start;
       gap: 15px;
       background: var(--panel);
       padding: 18px 22px;
@@ -148,10 +152,10 @@
   <header>
     <a href="/" class="logo">Home</a>
     <nav>
-      <a href="/multiplayer.html">Multiplayer</a>
-      <a href="/singleplayer.html">Single Player</a>
+      <a href="/public/index.html">Multiplayer</a>
+      <a href="/solo/index.html">Single Player</a>
       <a href="/socials.html">Social</a>
-      <a href="/about.html">About Us</a>
+      <a href="/about/index.html">About Us</a>
     </nav>
   </header>
 
