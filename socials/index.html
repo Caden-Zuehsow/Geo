@@ -43,10 +43,24 @@
       z-index: 1000;
     }
 
-    .logo img {
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+
+    .logo-container img {
       height: 40px;
       width: auto;
-      object-fit: contain;
+    }
+
+    .home-text {
+      font-weight: 600; /* slightly less bold */
+      color: white;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+      font-size: 0.95rem;
+      white-space: nowrap;
     }
 
     nav {
@@ -175,8 +189,9 @@
 
   <!-- HEADER -->
   <header>
-    <a href="/" class="logo">
-      <img src="/geofavicon/logo.png" alt="GeoBrawl Logo">
+    <a href="/" class="logo-container">
+      <img src="/geofavicon/logo.png" alt="GeoBrawl Logo" class="logo">
+      <span class="home-text">Home</span>
     </a>
 
     <div class="menu-toggle" onclick="toggleMenu()">☰</div>
