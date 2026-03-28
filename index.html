@@ -7,7 +7,7 @@
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2567172915118232"
      crossorigin="anonymous"></script>
 
-  <!-- Google tag (gtag.js) -->
+  <!-- Google tag -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-BPYMG0BNRP"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
@@ -35,19 +35,89 @@
       --button: #4A90D6;
     }
 
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       font-family: system-ui, Arial, sans-serif;
       background: var(--background);
       margin: 0;
-      padding: 30px;
+      padding: 0;
       text-align: center;
       color: #E8E8E8;
     }
 
-    /* Language selector */
+    /* ===== HEADER ===== */
+    header {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      padding: 15px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: transparent;
+      z-index: 1000;
+    }
+
+    .logo {
+      font-weight: 800; /* BOLD */
+      font-size: 1.2rem;
+      color: white;
+      text-decoration: none;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+    }
+
+    nav {
+      display: flex;
+      gap: 18px;
+    }
+
+    nav a {
+      text-decoration: none;
+      color: white;
+      font-weight: 700; /* BOLD */
+      text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+      white-space: nowrap;
+      font-size: 0.95rem;
+    }
+
+    /* ===== HAMBURGER ===== */
+    .menu-toggle {
+      display: none;
+      font-size: 1.6rem;
+      color: white;
+      cursor: pointer;
+    }
+
+    /* ===== MOBILE NAV ===== */
+    @media (max-width: 768px) {
+      nav {
+        position: absolute;
+        top: 60px;
+        right: 20px;
+        background: #1A355F;
+        border-radius: 10px;
+        padding: 10px;
+        flex-direction: column;
+        gap: 10px;
+        display: none;
+      }
+
+      nav.active {
+        display: flex;
+      }
+
+      .menu-toggle {
+        display: block;
+      }
+    }
+
+    /* ===== LANGUAGE SELECT ===== */
     .lang-select {
-      position: absolute;
-      top: 15px;
+      position: fixed;
+      top: 60px;
       right: 20px;
     }
 
@@ -61,9 +131,14 @@
       cursor: pointer;
     }
 
-    #logo {
+    /* ===== CONTENT ===== */
+    .content {
+      padding: 110px 30px 30px;
+    }
+
+    #logo-img {
       width: 200px;
-      margin: 40px auto 20px auto;
+      margin: 20px auto;
       filter: drop-shadow(0px 0px 14px rgba(0,0,0,0.4));
     }
 
@@ -87,9 +162,9 @@
       text-decoration: none;
       font-size: 1.3rem;
       font-weight: 600;
-      display: block; /* makes buttons stack vertically */
-      margin: 15px auto 0 auto; /* vertical spacing and center */
-      width: 220px; /* optional fixed width for uniform buttons */
+      display: block;
+      margin: 15px auto 0 auto;
+      width: 220px;
       transition: 0.2s;
     }
 
@@ -110,13 +185,13 @@
       text-decoration: none;
       font-weight: 600;
     }
-
-    .footer-links a:hover {
-      text-decoration: underline;
-    }
   </style>
 
   <script>
+    function toggleMenu() {
+      document.getElementById("navMenu").classList.toggle("active");
+    }
+
     if ("serviceWorker" in navigator) {
       navigator.serviceWorker.register("/service-worker.js");
     }
@@ -129,6 +204,20 @@
 
 <body>
 
+  <!-- HEADER -->
+  <header>
+    <a href="/" class="logo">Home</a>
+
+    <div class="menu-toggle" onclick="toggleMenu()">☰</div>
+
+    <nav id="navMenu">
+      <a href="/public/index.html">Multiplayer</a>
+      <a href="/solo/index.html">Single Player</a>
+      <a href="/socials/index.html">Social</a>
+      <a href="/about/index.html">About Us</a>
+    </nav>
+  </header>
+
   <!-- Language Dropdown -->
   <div class="lang-select">
     <select onchange="changeLanguage(this.value)">
@@ -139,21 +228,23 @@
     </select>
   </div>
 
-  <img id="logo" src="/geofavicon/logo.png" alt="GeoBrawl Logo">
+  <!-- CONTENT -->
+  <div class="content">
+    <img id="logo-img" src="/geofavicon/logo.png" alt="GeoBrawl Logo">
 
-  <h1>GeoBrawl</h1>
-  <p>GeoBrawl lets you and your friends choose each others guessing location</p>
+    <h1>GeoBrawl</h1>
+    <p>GeoBrawl lets you and your friends choose each others guessing location</p>
 
-  <!-- Buttons stacked vertically -->
-  <a class="button" href="/solo">Single Player</a>
-  <a class="button" href="/public">Multiplayer</a>
+    <a class="button" href="/solo/index.html">Single Player</a>
+    <a class="button" href="/public/index.html">Multiplayer</a>
 
-  <footer>
-    <div class="footer-links">
-      <a href="/about/">About Us</a>
-    </div>
-    <p>Website by Mahlan Media Webservices</p>
-  </footer>
+    <footer>
+      <div class="footer-links">
+        <a href="/about/index.html">About Us</a>
+      </div>
+      <p>Website by Mahlan Media Webservices</p>
+    </footer>
+  </div>
 
 </body>
 </html>
