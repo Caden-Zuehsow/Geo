@@ -22,19 +22,91 @@
       --panel-border: #0A1630;
     }
 
+    /* ===== GLOBAL FIX ===== */
     body {
       font-family: system-ui, Arial;
       margin: 0;
-      padding: 20px;
-      background: var(--bg);
       display: flex;
-      justify-content: center;
+      flex-direction: column;
+      min-height: 100vh;
+      background: var(--bg);
       color: var(--text-light);
     }
 
+    /* ===== HEADER ===== */
+    header {
+      position: fixed;
+      top: 0;
+      left: 0; /* FIX SHIFT */
+      width: 100%;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: transparent;
+      z-index: 1000;
+      box-sizing: border-box;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+
+    .logo-container img {
+      height: 40px;
+    }
+
+    .home-text {
+      color: white;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    nav {
+      display: flex;
+      gap: 18px;
+    }
+
+    nav a {
+      color: white;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 0.95rem;
+    }
+
+    .menu-toggle {
+      display: none;
+      font-size: 1.6rem;
+      color: white;
+      cursor: pointer;
+    }
+
+    @media (max-width: 768px) {
+      nav {
+        position: absolute;
+        top: 60px;
+        right: 20px;
+        background: var(--panel);
+        border-radius: 10px;
+        padding: 10px;
+        flex-direction: column;
+        display: none;
+      }
+
+      nav.active { display: flex; }
+      .menu-toggle { display: block; }
+    }
+
+    /* ===== CONTENT ===== */
     #container {
       width: 100%;
       max-width: 750px;
+      margin: 100px auto 20px auto;
+      padding: 0 15px;
+      box-sizing: border-box;
     }
 
     #logo {
@@ -95,119 +167,97 @@
     a:hover {
       text-decoration: underline;
     }
+
+    /* ===== FOOTER ===== */
+    .site-footer {
+      text-align: center;
+      padding: 20px;
+      font-size: 0.9rem;
+      color: #CFCFCF;
+      margin-top: auto;
+    }
+
+    .site-footer a {
+      color: #9bb5ff;
+      text-decoration: none;
+      font-weight: 600;
+    }
   </style>
 </head>
 
 <body>
-  <div id="container">
 
-    <a href="/">
-      <img id="logo" src="/geofavicon/logo.png" alt="GeoBrawl Logo">
-    </a>
+<!-- HEADER -->
+<header>
+  <a href="/" class="logo-container">
+    <img src="/geofavicon/logo.png" alt="GeoBrawl Logo">
+    <span class="home-text">Home</span>
+  </a>
 
-    <h1>Best GeoGuessr Alternative</h1>
+  <div class="menu-toggle" onclick="toggleMenu()">☰</div>
 
-    <!-- FEATURED SECTION -->
-    <div class="panel">
-      <h2 style="color:var(--text-accent)">#1 – GeoBrawl</h2>
-      <p>
-        If you're looking for the <b>best alternative to GeoGuessr</b>, 
-        <span class="highlight">GeoBrawl</span> 
-        stands out as a strong competitive option.
-      </p>
+  <nav id="navMenu">
+    <a href="/public/">Multiplayer</a>
+    <a href="/solo/">Single Player</a>
+    <a href="/socials/">Social</a>
+    <a href="/about/">About Us</a>
+  </nav>
+</header>
 
-      <p>
-        Unlike traditional random-location guessing games, GeoBrawl introduces
-        a strategic multiplayer format. One player becomes the <b>Picker</b> and
-        intentionally selects a Street View location for others to guess.
-      </p>
+<!-- CONTENT -->
+<div id="container">
 
-      <p>
-        This creates psychological gameplay, deception, and tactical decision-making —
-        transforming geography knowledge into a competitive challenge.
-      </p>
+  <a href="/">
+    <img id="logo" src="/geofavicon/logo.png" alt="GeoBrawl Logo">
+  </a>
 
-      <p>
-        ✔ Player-picked Street View locations<br>
-        ✔ Rotating roles each round<br>
-        ✔ Browser-based gameplay<br>
-        ✔ Free to play
-      </p>
-    </div>
+  <h1>Best GeoGuessr Alternative</h1>
 
-    <!-- GEO GUESSR REFERENCE -->
-    <div class="panel">
-      <h3 style="color:var(--text-accent)">How It Compares to GeoGuessr</h3>
-      <p>
-        <b>GeoGuessr</b> popularized the Street View guessing genre. Players are dropped into
-        random real-world locations and must pinpoint where they are on a map.
-      </p>
-
-      <p>
-        GeoGuessr focuses primarily on solo exploration and deduction,
-        while GeoBrawl adds strategy through player-selected locations.
-      </p>
-    </div>
-
-    <!-- OTHER ALTERNATIVES -->
-    <div class="panel">
-      <h3 style="color:var(--text-accent)">Other GeoGuessr Alternatives</h3>
-
-      <p>
-        <b>City Guesser</b><br>
-        Uses real-world video footage instead of Street View. Players guess
-        the city or country based on visual clues from walking or driving videos.
-      </p>
-
-      <p>
-        <b>Seterra</b><br>
-        A traditional geography quiz platform focused on labeling countries,
-        capitals, and regions on static maps. Ideal for educational practice.
-      </p>
-    </div>
-
-    <!-- COMPARISON TABLE -->
-    <div class="panel">
-      <h3 style="color:var(--text-accent)">Quick Comparison</h3>
-      <table>
-        <tr>
-          <th>Game</th>
-          <th>Street View</th>
-          <th>Multiplayer</th>
-          <th>Strategic Picking</th>
-          <th>Free?</th>
-        </tr>
-        <tr>
-          <td>GeoBrawl</td>
-          <td>Yes</td>
-          <td>Yes</td>
-          <td>Yes</td>
-          <td>Free</td>
-        </tr>
-        <tr>
-          <td>GeoGuessr</td>
-          <td>Yes</td>
-          <td>Limited</td>
-          <td>No (randomized)</td>
-          <td>Paid (subscription)</td>
-        </tr>
-        <tr>
-          <td>City Guesser</td>
-          <td>No (video-based)</td>
-          <td>Limited</td>
-          <td>No</td>
-          <td>Free</td>
-        </tr>
-        <tr>
-          <td>Seterra</td>
-          <td>No</td>
-          <td>No</td>
-          <td>No</td>
-          <td>Free</td>
-        </tr>
-      </table>
-    </div>
-
+  <div class="panel">
+    <h2 style="color:var(--text-accent)">#1 – GeoBrawl</h2>
+    <p><b>GeoBrawl</b> is a competitive alternative where players pick locations for others.</p>
+    <p>✔ Multiplayer strategy<br>✔ Street View gameplay<br>✔ Free to play</p>
   </div>
+
+  <div class="panel">
+    <h3 style="color:var(--text-accent)">How It Compares to GeoGuessr</h3>
+    <p>GeoGuessr focuses on random exploration, while GeoBrawl adds strategy.</p>
+  </div>
+
+  <div class="panel">
+    <h3 style="color:var(--text-accent)">Other Alternatives</h3>
+    <p><b>City Guesser</b> – video-based guessing</p>
+    <p><b>Seterra</b> – map quizzes</p>
+  </div>
+
+  <div class="panel">
+    <h3 style="color:var(--text-accent)">Quick Comparison</h3>
+    <table>
+      <tr>
+        <th>Game</th><th>Street View</th><th>Multiplayer</th><th>Free?</th>
+      </tr>
+      <tr>
+        <td>GeoBrawl</td><td>Yes</td><td>Yes</td><td>Free</td>
+      </tr>
+      <tr>
+        <td>GeoGuessr</td><td>Yes</td><td>Limited</td><td>Paid</td>
+      </tr>
+    </table>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<footer class="site-footer">
+  <a href="/privacy/">Privacy Policy & Terms</a>
+  <p>Website by Mahlan Media Webservices</p>
+</footer>
+
+<script>
+function toggleMenu() {
+  document.getElementById("navMenu").classList.toggle("active");
+}
+</script>
+
 </body>
 </html>
