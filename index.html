@@ -1,38 +1,23 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#1e90ff">
-  <meta name="google-adsense-account" content="ca-pub-2567172915118232">
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2567172915118232"
-     crossorigin="anonymous"></script>
-
-  <!-- Google tag -->
-  <script async src="https://www.googletagmanager.com/gtag/js?id=G-BPYMG0BNRP"></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag(){dataLayer.push(arguments);}
-    gtag('js', new Date());
-    gtag('config', 'G-BPYMG0BNRP');
-  </script>
-
   <meta charset="utf-8">
   <title>GeoBrawl</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
-  <!-- FAVICONS -->
   <link rel="icon" type="image/png" href="/geofavicon/favicon-96x96.png" sizes="96x96" />
   <link rel="icon" type="image/svg+xml" href="/geofavicon/favicon.svg" />
   <link rel="shortcut icon" href="/geofavicon/favicon.ico" />
   <link rel="apple-touch-icon" sizes="180x180" href="/geofavicon/apple-touch-icon.png" />
   <link rel="manifest" href="/geofavicon/site.webmanifest" />
 
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-
   <style>
     :root {
       --ocean: #4A90D6;
       --background: #11284B;
       --button: #4A90D6;
+      --panel: #1A355F;
+      --text: #E8E8E8;
     }
 
     * { box-sizing: border-box; }
@@ -40,10 +25,10 @@
     body {
       font-family: system-ui, Arial, sans-serif;
       background: var(--background);
+      color: var(--text);
       margin: 0;
       padding: 0;
       text-align: center;
-      color: #E8E8E8;
       position: relative;
       min-height: 100vh;
     }
@@ -53,7 +38,7 @@
       position: fixed;
       top: 0;
       width: 100%;
-      padding: 15px 20px;
+      padding: 10px 20px;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -61,12 +46,24 @@
       z-index: 1000;
     }
 
-    .logo {
-      font-weight: 500; /* slightly less bold */
-      font-size: 1.2rem;
-      color: white;
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
       text-decoration: none;
+    }
+
+    .logo-container img {
+      height: 40px;
+      width: auto;
+    }
+
+    .home-text {
+      font-weight: 600;
+      color: white;
       text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+      font-size: 0.95rem;
+      white-space: nowrap;
     }
 
     nav {
@@ -83,7 +80,6 @@
       font-size: 0.95rem;
     }
 
-    /* ===== HAMBURGER ===== */
     .menu-toggle {
       display: none;
       font-size: 1.6rem;
@@ -91,13 +87,12 @@
       cursor: pointer;
     }
 
-    /* ===== MOBILE NAV ===== */
     @media (max-width: 768px) {
       nav {
         position: absolute;
         top: 60px;
         right: 20px;
-        background: #1A355F;
+        background: var(--panel);
         border-radius: 10px;
         padding: 10px;
         flex-direction: column;
@@ -106,19 +101,21 @@
       }
 
       nav.active { display: flex; }
-
       .menu-toggle { display: block; }
     }
 
     /* ===== CONTENT ===== */
     .content {
-      padding: 110px 30px 30px;
+      padding: 120px 20px 30px;
+      max-width: 500px;
+      margin: 0 auto;
     }
 
     #logo-img {
       width: 200px;
       margin: 20px auto;
       filter: drop-shadow(0px 0px 14px rgba(0,0,0,0.4));
+      display: block;
     }
 
     h1 {
@@ -130,8 +127,7 @@
 
     p {
       font-size: 1.1rem;
-      margin-top: 10px;
-      margin-bottom: 30px;
+      margin: 10px 0 30px;
     }
 
     a.button {
@@ -172,7 +168,7 @@
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%);
-      background: #1A355F;
+      background: var(--panel);
       color: white;
       padding: 20px 25px;
       border-radius: 12px;
@@ -198,9 +194,8 @@
       font-size: 0.95rem;
     }
 
-    #cookie-banner button:hover {
-      background: #2f6cb0;
-    }
+    #cookie-banner button:hover { background: #2f6cb0; }
+
   </style>
 
   <script>
@@ -218,10 +213,6 @@
         document.getElementById('cookie-banner').style.display = 'flex';
       }
     });
-
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/service-worker.js");
-    }
   </script>
 </head>
 
@@ -249,7 +240,7 @@
     <img id="logo-img" src="/geofavicon/logo.png" alt="GeoBrawl Logo">
 
     <h1>GeoBrawl</h1>
-    <p>GeoBrawl lets you and your friends choose each others guessing location</p>
+    <p>GeoBrawl lets you and your friends choose each other's guessing location</p>
 
     <a class="button" href="/solo/index.html">Single Player</a>
     <a class="button" href="/public/index.html">Multiplayer</a>
@@ -265,6 +256,7 @@
   <!-- COOKIE BANNER -->
   <div id="cookie-banner">
     🍪 This website uses cookies for analytics and ads. <br>
+    <a href="/privacy/index.html" style="color: #9bb5ff; text-decoration: underline;">Privacy Policy</a><br>
     <button onclick="acceptCookies()">Allow Cookies</button>
   </div>
 
