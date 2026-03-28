@@ -8,6 +8,9 @@
   <!-- Favicon -->
   <link rel="icon" href="/geofavicon/favicon.ico">
 
+  <!-- Icons (Font Awesome) -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
   <style>
     :root {
       --ocean: #4A90D6;
@@ -29,12 +32,11 @@
       position: fixed;
       top: 0;
       width: 100%;
-      padding: 15px 30px;
+      padding: 15px 20px;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: rgba(255,255,255,0.05);
-      backdrop-filter: blur(10px);
+      background: transparent;
       z-index: 1000;
     }
 
@@ -43,95 +45,99 @@
       font-size: 1.2rem;
       color: white;
       text-decoration: none;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+    }
+
+    nav {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
     }
 
     nav a {
-      margin-left: 25px;
+      margin-left: 18px;
       text-decoration: none;
       color: white;
       font-weight: 500;
-      transition: opacity 0.2s;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+      white-space: nowrap;
     }
 
-    nav a:hover {
-      opacity: 0.7;
-    }
-
-    /* ===== MAIN CONTENT ===== */
+    /* ===== CONTENT ===== */
     .content {
-      padding: 100px 30px 30px; /* prevents header overlap */
+      padding: 100px 20px 30px;
+      max-width: 500px;
+      margin: 0 auto;
     }
 
     h1 {
       color: var(--ocean);
-      font-size: 2.5rem;
+      font-size: 2.3rem;
       margin-bottom: 10px;
     }
 
     p {
-      font-size: 1.1rem;
-      margin-bottom: 40px;
+      font-size: 1.05rem;
+      margin-bottom: 35px;
     }
 
+    /* ===== SOCIAL STACK ===== */
     .socials {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 25px;
-      max-width: 700px;
-      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
     }
 
     .social-card {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 15px;
       background: var(--panel);
-      padding: 25px;
-      border-radius: 14px;
+      padding: 18px 22px;
+      border-radius: 12px;
       text-decoration: none;
       color: white;
-      font-size: 1.2rem;
+      font-size: 1.1rem;
       font-weight: 600;
       transition: transform 0.2s, box-shadow 0.2s;
       box-shadow: 0 6px 18px rgba(0,0,0,0.25);
     }
 
+    .social-card i {
+      font-size: 1.5rem;
+      width: 28px;
+    }
+
     .social-card:hover {
-      transform: translateY(-4px);
+      transform: translateY(-3px);
       box-shadow: 0 10px 28px rgba(0,0,0,0.35);
     }
 
-    .social-card span {
+    .social-text {
+      text-align: left;
+    }
+
+    .social-text span {
       display: block;
-      margin-top: 8px;
-      font-size: 0.95rem;
+      font-size: 0.9rem;
       font-weight: 400;
       color: #cfdcff;
     }
 
-    /* ===== PROMO / AD SPACE ===== */
+    /* ===== PROMO ===== */
     .promo {
-      margin-top: 40px;
-      padding: 20px;
+      margin-top: 35px;
+      padding: 18px;
       background: rgba(255,255,255,0.05);
-      border-radius: 12px;
-      font-size: 1rem;
-      max-width: 700px;
-      margin-left: auto;
-      margin-right: auto;
+      border-radius: 10px;
+      font-size: 0.95rem;
     }
 
     footer {
-      margin-top: 60px;
+      margin-top: 50px;
       font-size: 0.9rem;
       color: #CFCFCF;
-    }
-
-    footer a {
-      color: #9bb5ff;
-      text-decoration: none;
-      font-weight: 600;
-    }
-
-    footer a:hover {
-      text-decoration: underline;
     }
   </style>
 </head>
@@ -156,36 +162,41 @@
 
     <div class="socials">
 
-      <!-- YouTube -->
-      <a class="social-card" href="https://www.youtube.com/@GeooBrawl" target="_blank" rel="noopener">
-        📺 YouTube
-        <span>Gameplay, updates, and announcements</span>
+      <!-- Discord -->
+      <a class="social-card" href="https://discord.gg/tzuKxqr6H" target="_blank">
+        <i class="fab fa-discord"></i>
+        <div class="social-text">
+          Discord
+          <span>Chat with players & join events</span>
+        </div>
       </a>
 
-      <!-- Discord -->
-      <a class="social-card" href="https://discord.gg/tzuKxqr6H" target="_blank" rel="noopener">
-        💬 Discord
-        <span>Chat with players & join events</span>
+      <!-- YouTube -->
+      <a class="social-card" href="https://www.youtube.com/@GeooBrawl" target="_blank">
+        <i class="fab fa-youtube"></i>
+        <div class="social-text">
+          YouTube
+          <span>Gameplay, updates, and announcements</span>
+        </div>
       </a>
 
       <!-- Instagram -->
-      <a class="social-card" href="https://www.instagram.com/geoobrawl" target="_blank" rel="noopener">
-        📸 Instagram
-        <span>Clips, highlights, and news</span>
+      <a class="social-card" href="https://www.instagram.com/geoobrawl" target="_blank">
+        <i class="fab fa-instagram"></i>
+        <div class="social-text">
+          Instagram
+          <span>Clips, highlights, and news</span>
+        </div>
       </a>
 
     </div>
 
-    <!-- PROMO / FUTURE ADS -->
     <div class="promo">
       🌍 GeoBrawl is growing — stay tuned for tournaments, merch, and more.
     </div>
 
     <footer>
-      <p>
-        <a href="/">← Back to GeoBrawl</a>
-      </p>
-      <p>Website by Mahlan Media Webservices</p>
+      Website by Mahlan Media Webservices
     </footer>
   </div>
 
