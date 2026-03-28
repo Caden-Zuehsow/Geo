@@ -16,19 +16,90 @@
       --text:#E8E8E8;
     }
 
+    * { box-sizing: border-box; }
+
     body {
       margin:0;
-      padding:20px;
+      padding:0;
       font-family:system-ui,Arial;
       color:var(--text);
       background:var(--bg);
-      display:flex;
-      justify-content:center;
     }
 
+    /* ===== HEADER ===== */
+    header {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: transparent;
+      z-index: 1000;
+    }
+
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+
+    .logo-container img {
+      height: 40px;
+    }
+
+    .home-text {
+      font-weight: 600;
+      color: white;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+      font-size: 0.95rem;
+    }
+
+    nav {
+      display: flex;
+      gap: 18px;
+    }
+
+    nav a {
+      text-decoration: none;
+      color: white;
+      font-weight: 700;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.6);
+      font-size: 0.95rem;
+    }
+
+    .menu-toggle {
+      display: none;
+      font-size: 1.6rem;
+      color: white;
+      cursor: pointer;
+    }
+
+    @media (max-width: 768px) {
+      nav {
+        position: absolute;
+        top: 60px;
+        right: 20px;
+        background: var(--panel);
+        border-radius: 10px;
+        padding: 10px;
+        flex-direction: column;
+        gap: 10px;
+        display: none;
+      }
+
+      nav.active { display: flex; }
+      .menu-toggle { display: block; }
+    }
+
+    /* ===== PAGE LAYOUT ===== */
     #container {
       width:100%;
       max-width:520px;
+      margin: 0 auto;
+      padding: 100px 20px 20px; /* pushes below header */
     }
 
     #logo {
@@ -39,9 +110,7 @@
       transition:transform 0.2s ease;
     }
 
-    #logo:hover {
-      transform:scale(1.05);
-    }
+    #logo:hover { transform:scale(1.05); }
 
     h1 {
       text-align:center;
@@ -79,14 +148,50 @@
       font-weight:600;
       margin-top:6px;
     }
+
+    footer {
+      text-align:center;
+      margin-top:30px;
+      font-size:0.9rem;
+      color:#CFCFCF;
+    }
+
+    .footer-links a {
+      color:#9bb5ff;
+      text-decoration:none;
+      font-weight:600;
+    }
   </style>
+
+  <script>
+    function toggleMenu() {
+      document.getElementById("navMenu").classList.toggle("active");
+    }
+  </script>
 </head>
 
 <body>
+
+<!-- HEADER -->
+<header>
+  <a href="/" class="logo-container">
+    <img src="/geofavicon/logo.png">
+    <span class="home-text">Home</span>
+  </a>
+
+  <div class="menu-toggle" onclick="toggleMenu()">☰</div>
+
+  <nav id="navMenu">
+    <a href="/public/">Multiplayer</a>
+    <a href="/solo/">Single Player</a>
+    <a href="/socials/">Social</a>
+    <a href="/about/">About Us</a>
+  </nav>
+</header>
+
 <div id="container">
 
-  <!-- Logo (correct location) -->
-  <a href="/" aria-label="Return to GeoBrawl homepage">
+  <a href="/">
     <img id="logo" src="/geofavicon/logo.png" alt="GeoBrawl Logo">
   </a>
 
@@ -110,21 +215,15 @@
   <div class="panel" id="resultPanel" style="display:none;">
     <div id="resultText"></div>
   </div>
-<div style="
-  text-align:center;
-  margin-top:30px;
-  padding-bottom:10px;
-  font-size:0.95rem;
-">
-  <a href="/" style="
-    color:#4A90D6;
-    text-decoration:none;
-    font-weight:600;
-  ">
-    ← Back to GeoBrawl Home
-  </a>
-</div>
-  
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="footer-links">
+      <a href="/privacy/">Privacy Policy & Terms of Service</a>
+    </div>
+    <p>Website by Mahlan Media Webservices</p>
+  </footer>
+
 </div>
 
 <!-- Google Maps API (UNCHANGED) -->
@@ -134,14 +233,6 @@
 
 <script>
 window.initSolo = function() {
-  console.log("initSolo called — Google Maps API loaded");
-
-  if (!google || !google.maps) {
-    console.error("Google Maps API not available!");
-    alert("Google Maps failed to load. Check your API key and internet connection.");
-    return;
-  }
-
   let pickerLatLng = null;
   let round = 0;
   let score = 0;
@@ -202,18 +293,13 @@ window.initSolo = function() {
         position: pickerLatLng,
         pov: { heading: 0, pitch: 0 },
         zoom: 1,
-        disableDefaultUI: true,
-        clickToGo: false,
-        scrollwheel: true,
-        draggable: true,
-        addressControl: false,
-        linksControl: false
+        disableDefaultUI: true
       });
 
       map.addListener('click', e => {
         if(marker) marker.setMap(null);
         marker = new google.maps.Marker({
-          position: { lat: e.latLng.lat(), lng: e.latLng.lng() },
+          position: e.latLng,
           map: map
         });
         submitGuessBtn.disabled = false;
@@ -227,7 +313,7 @@ window.initSolo = function() {
     if(!marker) return alert("Click on the map to place your guess!");
 
     const dist = google.maps.geometry.spherical.computeDistanceBetween(
-      new google.maps.LatLng(marker.getPosition().lat(), marker.getPosition().lng()),
+      marker.getPosition(),
       new google.maps.LatLng(pickerLatLng.lat, pickerLatLng.lng)
     );
 
@@ -239,28 +325,6 @@ window.initSolo = function() {
     resultPanel.style.display = '';
 
     submitGuessBtn.disabled = true;
-
-    const correctMarker = new google.maps.Marker({
-      position: pickerLatLng,
-      map: map,
-      icon: {
-        path: google.maps.SymbolPath.CIRCLE,
-        scale: 8,
-        fillColor: "#00FF00",
-        fillOpacity: 0.8,
-        strokeWeight: 2,
-        strokeColor: "#000"
-      },
-      title: "Correct location"
-    });
-
-    mapMarkers.push(correctMarker);
-    mapMarkers.push(marker);
-
-    const bounds = new google.maps.LatLngBounds();
-    bounds.extend(marker.getPosition());
-    bounds.extend(pickerLatLng);
-    map.fitBounds(bounds);
   };
 };
 </script>
