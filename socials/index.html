@@ -18,11 +18,48 @@
 
     body {
       margin: 0;
-      padding: 30px;
       font-family: system-ui, Arial, sans-serif;
       background: var(--background);
       color: var(--text);
       text-align: center;
+    }
+
+    /* ===== HEADER ===== */
+    header {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      padding: 15px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: rgba(255,255,255,0.05);
+      backdrop-filter: blur(10px);
+      z-index: 1000;
+    }
+
+    .logo {
+      font-weight: 700;
+      font-size: 1.2rem;
+      color: white;
+      text-decoration: none;
+    }
+
+    nav a {
+      margin-left: 25px;
+      text-decoration: none;
+      color: white;
+      font-weight: 500;
+      transition: opacity 0.2s;
+    }
+
+    nav a:hover {
+      opacity: 0.7;
+    }
+
+    /* ===== MAIN CONTENT ===== */
+    .content {
+      padding: 100px 30px 30px; /* prevents header overlap */
     }
 
     h1 {
@@ -69,6 +106,18 @@
       color: #cfdcff;
     }
 
+    /* ===== PROMO / AD SPACE ===== */
+    .promo {
+      margin-top: 40px;
+      padding: 20px;
+      background: rgba(255,255,255,0.05);
+      border-radius: 12px;
+      font-size: 1rem;
+      max-width: 700px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+
     footer {
       margin-top: 60px;
       font-size: 0.9rem;
@@ -89,35 +138,56 @@
 
 <body>
 
-  <h1>GeoBrawl Socials</h1>
-  <p>Join the community, watch updates, and stay connected.</p>
+  <!-- HEADER -->
+  <header>
+    <a href="/" class="logo">Home</a>
+    <nav>
+      <a href="/multiplayer.html">Multiplayer</a>
+      <a href="/singleplayer.html">Single Player</a>
+      <a href="/socials.html">Social</a>
+      <a href="/about.html">About Us</a>
+    </nav>
+  </header>
 
-  <div class="socials">
-    <!-- YouTube -->
-    <a class="social-card" href="https://www.youtube.com/" target="_blank" rel="noopener">
-      📺 YouTube
-      <span>Gameplay, updates, and announcements</span>
-    </a>
+  <!-- CONTENT -->
+  <div class="content">
+    <h1>GeoBrawl Socials</h1>
+    <p>Join the community, watch updates, and stay connected.</p>
 
-    <!-- Discord -->
-    <a class="social-card" href="https://discord.gg/" target="_blank" rel="noopener">
-      💬 Discord
-      <span>Chat with players & join events</span>
-    </a>
+    <div class="socials">
 
-    <!-- Instagram -->
-    <a class="social-card" href="https://www.instagram.com/" target="_blank" rel="noopener">
-      📸 Instagram
-      <span>Clips, highlights, and news</span>
-    </a>
+      <!-- YouTube -->
+      <a class="social-card" href="https://www.youtube.com/@GeooBrawl" target="_blank" rel="noopener">
+        📺 YouTube
+        <span>Gameplay, updates, and announcements</span>
+      </a>
+
+      <!-- Discord -->
+      <a class="social-card" href="https://discord.gg/tzuKxqr6H" target="_blank" rel="noopener">
+        💬 Discord
+        <span>Chat with players & join events</span>
+      </a>
+
+      <!-- Instagram -->
+      <a class="social-card" href="https://www.instagram.com/geoobrawl" target="_blank" rel="noopener">
+        📸 Instagram
+        <span>Clips, highlights, and news</span>
+      </a>
+
+    </div>
+
+    <!-- PROMO / FUTURE ADS -->
+    <div class="promo">
+      🌍 GeoBrawl is growing — stay tuned for tournaments, merch, and more.
+    </div>
+
+    <footer>
+      <p>
+        <a href="/">← Back to GeoBrawl</a>
+      </p>
+      <p>Website by Mahlan Media Webservices</p>
+    </footer>
   </div>
-
-  <footer>
-    <p>
-      <a href="/">← Back to GeoBrawl</a>
-    </p>
-    <p>Website by Mahlan Media Webservices</p>
-  </footer>
 
 </body>
 </html>
