@@ -221,19 +221,43 @@ async function loadGame(lat, lng) {
 
     const taxonId = filter || correct.taxon.iconic_taxon_id;
 
-    // 🔴 WRONG answers from Alaska (very different biome)
-    const wrongRes = await fetch(
-      `https://api.inaturalist.org/v1/observations/species_counts?place_id=6&taxon_id=${taxonId}&per_page=50`
-    );
-    const wrongData = await wrongRes.json();
+  const wrongPlaces = [6, 97394, 97391, 97392, 97393, 14, 1];
+const randomPlace = wrongPlaces[Math.floor(Math.random() * wrongPlaces.length)];
 
-    const options = [];
+const wrongRes = await fetch(
+  `https://api.inaturalist.org/v1/observations/species_counts?place_id=${randomPlace}&taxon_id=${taxonId}&per_page=200`
+);
+const wrongData = await wrongRes.json();
 
+const shuffledWrong = wrongData.results.sort(() => Math.random() - 0.5);
+
+const options = [];
+
+options.push({
+  name: correctAnswer,
+  photo: correctPhoto,
+  correct: true
+});
+
+// add wrong answers
+for (let item of shuffledWrong) {
+  const name = item.taxon?.preferred_common_name || item.taxon?.name;
+  const photo = item.taxon?.default_photo?.medium_url || "";
+
+  if (
+    name &&
+    name !== correctAnswer &&
+    !options.find(o => o.name === name)
+  ) {
     options.push({
-      name: correctAnswer,
-      photo: correctPhoto,
-      correct: true
+      name: name,
+      photo: photo,
+      correct: false
     });
+  }
+
+  if (options.length >= 4) break;
+}
 
     for (let item of wrongData.results) {
       const name =
