@@ -230,13 +230,14 @@
 <script async
   src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCQHZHmpF-9_7jEixW8z_h_-zbImwnI3S0&libraries=geometry&callback=initSolo">
 </script>
-
+  
 <script>
 window.initSolo = async function() {
   let pickerLatLng = null;
   let round = 0;
   let score = 0;
   let indianaPolygon = null;
+  let hasGuessed = false;
 
   const streetViewDiv = document.getElementById('streetView');
   const mapDiv = document.getElementById('map');
@@ -247,7 +248,7 @@ window.initSolo = async function() {
   const resultText = document.getElementById('resultText');
   const submitGuessBtn = document.getElementById('submitGuessBtn');
 
-  let svPanorama, map, marker;
+  let svPanorama, map, marker, actualMarker, line;
   let mapMarkers = [];
 
   map = new google.maps.Map(mapDiv, {
@@ -262,7 +263,6 @@ window.initSolo = async function() {
     const data = await res.json();
 
     const indianaFeature = data.features.find(f => f.properties.name === "Indiana");
-
     const coords = indianaFeature.geometry.coordinates[0];
 
     const path = coords.map(c => ({ lat: c[1], lng: c[0] }));
@@ -314,17 +314,22 @@ window.initSolo = async function() {
     tryLocation();
   }
 
-  // ===== GAME ROUND =====
+  // ===== START ROUND =====
   function startRound() {
     round++;
     roundSpan.textContent = round;
     resultPanel.style.display = 'none';
     submitGuessBtn.disabled = true;
+    hasGuessed = false;
 
     if(marker) marker.setMap(null);
+    if(actualMarker) actualMarker.setMap(null);
+    if(line) line.setMap(null);
+
     mapMarkers.forEach(m => m.setMap(null));
     marker = null;
-    mapMarkers = [];
+    actualMarker = null;
+    line = null;
 
     getRandomStreetViewLocation(latLng => {
       pickerLatLng = { lat: latLng.lat(), lng: latLng.lng() };
@@ -335,34 +340,75 @@ window.initSolo = async function() {
         zoom: 1,
         disableDefaultUI: true
       });
-
-      map.addListener('click', e => {
-        if(marker) marker.setMap(null);
-        marker = new google.maps.Marker({
-          position: e.latLng,
-          map: map
-        });
-        submitGuessBtn.disabled = false;
-      });
     });
   }
 
   startBtn.onclick = startRound;
 
-  // ===== GUESS SUBMIT =====
+  // ===== MAP CLICK (ONE GUESS ONLY) =====
+  map.addListener('click', e => {
+    if (hasGuessed) return;
+
+    if(marker) marker.setMap(null);
+
+    marker = new google.maps.Marker({
+      position: e.latLng,
+      map: map
+    });
+
+    submitGuessBtn.disabled = false;
+  });
+
+  // ===== SUBMIT GUESS =====
   submitGuessBtn.onclick = () => {
     if(!marker) return alert("Click on the map to place your guess!");
 
+    hasGuessed = true;
+
+    const guessLatLng = marker.getPosition();
+    const actualLatLng = new google.maps.LatLng(pickerLatLng.lat, pickerLatLng.lng);
+
+    // Distance
     const dist = google.maps.geometry.spherical.computeDistanceBetween(
-      marker.getPosition(),
-      new google.maps.LatLng(pickerLatLng.lat, pickerLatLng.lng)
+      guessLatLng,
+      actualLatLng
     );
 
-    const points = Math.max(0, 1000 - Math.round(dist / 1609.34));
+    const miles = dist / 1609.34;
+    const points = Math.max(0, 50 - Math.round(miles));
+
     score += points;
     scoreSpan.textContent = score;
 
-    resultText.innerHTML = `Distance: ${Math.round(dist)} m — Points: ${points}`;
+    // ===== SHOW CORRECT LOCATION =====
+    actualMarker = new google.maps.Marker({
+      position: actualLatLng,
+      map: map,
+      icon: {
+        url: "http://maps.google.com/mapfiles/ms/icons/green-dot.png"
+      }
+    });
+
+    // ===== DRAW LINE =====
+    line = new google.maps.Polyline({
+      path: [guessLatLng, actualLatLng],
+      geodesic: true,
+      strokeColor: "#00FFAA",
+      strokeOpacity: 1.0,
+      strokeWeight: 2,
+      map: map
+    });
+
+    // Fit map to show both points
+    const bounds = new google.maps.LatLngBounds();
+    bounds.extend(guessLatLng);
+    bounds.extend(actualLatLng);
+    map.fitBounds(bounds);
+
+    resultText.innerHTML = `
+      Distance: ${miles.toFixed(1)} miles<br>
+      Points: ${points}
+    `;
     resultPanel.style.display = '';
 
     submitGuessBtn.disabled = true;
