@@ -1,0 +1,288 @@
+<!doctype html>
+
+<html lang="en">
+<head>
+
+  <!-- 🔧 DEV MODE (ADS OFF) -->
+
+  <script>
+    const DEV_MODE = true;
+  </script>
+
+  <!-- ❌ AdSense disabled in testing -->
+
+  <!--
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?..."></script>
+  -->
+
+  <meta charset="utf-8" />
+  <title>GeoBrawl — Solo (Test)</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <!-- Firebase -->
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+  <style>
+    :root {
+      --bg:#11284B;
+      --panel:#1A355F;
+      --accent:#4A90D6;
+      --text:#E8E8E8;
+    }
+
+    body {
+      margin:0;
+      font-family:system-ui,Arial;
+      color:var(--text);
+      background:var(--bg);
+    }
+
+    #container {
+      max-width:520px;
+      margin:auto;
+      padding:20px;
+    }
+
+    .panel {
+      background:var(--panel);
+      padding:14px;
+      border-radius:12px;
+      margin-bottom:14px;
+    }
+
+    button {
+      width:100%;
+      padding:10px;
+      margin-top:6px;
+      border:none;
+      border-radius:8px;
+      background:var(--accent);
+      color:white;
+      cursor:pointer;
+    }
+
+    #streetView, #map {
+      width:100%;
+      height:260px;
+      border-radius:8px;
+      margin-bottom:8px;
+    }
+  </style>
+
+</head>
+
+<body>
+<div id="container">
+
+  <h1>GeoBrawl — Test Mode</h1>
+
+  <!-- LOGIN PANEL -->
+
+  <div class="panel">
+    <button id="loginBtn">Login with Google</button>
+    <button id="logoutBtn" style="display:none;">Logout</button>
+    <div id="userStatus">Loading...</div>
+  </div>
+
+  <!-- GAME PANEL -->
+
+  <div class="panel">
+    <button id="startBtn">Start New Game</button>
+    <div>Round: <span id="round">0</span></div>
+    <div>Score: <span id="score">0</span></div>
+  </div>
+
+  <div class="panel">
+    <div id="streetView">Loading Street View…</div>
+  </div>
+
+  <div class="panel">
+    <div id="map"></div>
+    <button id="submitGuessBtn" disabled>Submit Guess</button>
+  </div>
+
+  <div class="panel" id="resultPanel" style="display:none;">
+    <div id="resultText"></div>
+  </div>
+
+</div>
+
+<script>
+/* 🔥 FIREBASE CONFIG */
+const firebaseConfig = {
+  apiKey: "YOUR_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+};
+
+firebase.initializeApp(firebaseConfig);
+
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+/* ===== GAME ===== */
+window.initSolo = function() {
+
+  let pickerLatLng = null;
+  let round = 0;
+  let score = 0;
+
+  let user = null;
+  let freeRounds = parseInt(localStorage.getItem("guestRounds") || "0");
+  const FREE_LIMIT = 3;
+
+  const streetViewDiv = document.getElementById('streetView');
+  const mapDiv = document.getElementById('map');
+  const startBtn = document.getElementById('startBtn');
+  const roundSpan = document.getElementById('round');
+  const scoreSpan = document.getElementById('score');
+  const resultPanel = document.getElementById('resultPanel');
+  const resultText = document.getElementById('resultText');
+  const submitGuessBtn = document.getElementById('submitGuessBtn');
+
+  const loginBtn = document.getElementById("loginBtn");
+  const logoutBtn = document.getElementById("logoutBtn");
+  const userStatus = document.getElementById("userStatus");
+
+  let map, marker;
+
+  map = new google.maps.Map(mapDiv, {
+    center: { lat: 0, lng: 0 },
+    zoom: 2
+  });
+
+  /* 🔐 AUTH */
+  loginBtn.onclick = async () => {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    await auth.signInWithPopup(provider);
+  };
+
+  logoutBtn.onclick = () => auth.signOut();
+
+  auth.onAuthStateChanged(async (u) => {
+    user = u;
+
+    if (user) {
+      userStatus.textContent = "Logged in: " + user.displayName;
+      loginBtn.style.display = "none";
+      logoutBtn.style.display = "";
+
+      const doc = await db.collection("users").doc(user.uid).get();
+      freeRounds = doc.exists ? doc.data().rounds || 0 : 0;
+
+    } else {
+      userStatus.textContent = "Guest (3 free rounds)";
+      loginBtn.style.display = "";
+      logoutBtn.style.display = "none";
+    }
+  });
+
+  function getRandomStreetViewLocation(callback) {
+    const svService = new google.maps.StreetViewService();
+
+    function tryLocation() {
+      const lat = (Math.random() - 0.5) * 180;
+      const lng = (Math.random() - 0.5) * 360;
+
+      svService.getPanorama({
+        location: { lat, lng },
+        radius: 50000
+      }, (data, status) => {
+
+        if (status === google.maps.StreetViewStatus.OK) {
+          callback(data.location.latLng);
+        } else {
+          tryLocation();
+        }
+      });
+    }
+
+    tryLocation();
+  }
+
+  async function startRound() {
+
+    if (!user && freeRounds >= FREE_LIMIT) {
+      alert("3 free rounds used. Please login.");
+      return;
+    }
+
+    round++;
+    freeRounds++;
+
+    if (user) {
+      await db.collection("users").doc(user.uid).set({
+        rounds: freeRounds
+      }, { merge: true });
+    } else {
+      localStorage.setItem("guestRounds", freeRounds);
+    }
+
+    roundSpan.textContent = round;
+    resultPanel.style.display = 'none';
+    submitGuessBtn.disabled = true;
+
+    if(marker) marker.setMap(null);
+
+    getRandomStreetViewLocation(latLng => {
+
+      pickerLatLng = {
+        lat: latLng.lat(),
+        lng: latLng.lng()
+      };
+
+      new google.maps.StreetViewPanorama(streetViewDiv, {
+        position: pickerLatLng,
+        pov: { heading: 0, pitch: 0 },
+        zoom: 1,
+        disableDefaultUI: true
+      });
+
+      map.addListener('click', e => {
+        if(marker) marker.setMap(null);
+
+        marker = new google.maps.Marker({
+          position: e.latLng,
+          map: map
+        });
+
+        submitGuessBtn.disabled = false;
+      });
+    });
+  }
+
+  startBtn.onclick = startRound;
+
+  submitGuessBtn.onclick = () => {
+
+    if(!marker) return alert("Click map first");
+
+    const dist = google.maps.geometry.spherical.computeDistanceBetween(
+      marker.getPosition(),
+      new google.maps.LatLng(pickerLatLng.lat, pickerLatLng.lng)
+    );
+
+    const points = Math.max(0, 1000 - Math.round(dist / 1609));
+    score += points;
+
+    scoreSpan.textContent = score;
+
+    resultText.innerHTML = `Distance: ${Math.round(dist)} m — Points: ${points}`;
+    resultPanel.style.display = '';
+  };
+};
+</script>
+
+<!-- Google Maps -->
+
+<script async
+src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_KEY&libraries=geometry&callback=initSolo">
+</script>
+
+</body>
+</html>
