@@ -22,12 +22,20 @@
       padding:30px;
       border-radius:14px;
       text-align:center;
-      width:300px;
+      width:320px;
     }
 
     h1 {
       margin-bottom:20px;
       color:#4A90D6;
+    }
+
+    input {
+      width:100%;
+      padding:10px;
+      margin-top:8px;
+      border-radius:8px;
+      border:none;
     }
 
     button {
@@ -50,6 +58,11 @@
       margin-top:15px;
       font-size:14px;
     }
+
+    .divider {
+      margin:12px 0;
+      opacity:0.6;
+    }
   </style>
 </head>
 
@@ -58,7 +71,18 @@
 <div class="panel">
   <h1>Login Test</h1>
 
-  <button id="loginBtn">Login with Google</button>
+  <!-- EMAIL LOGIN -->
+  <input id="email" type="email" placeholder="Email">
+  <input id="password" type="password" placeholder="Password">
+
+  <button id="loginEmailBtn">Login</button>
+  <button id="signupBtn">Create Account</button>
+
+  <div class="divider">or</div>
+
+  <!-- GOOGLE -->
+  <button id="loginGoogleBtn">Login with Google</button>
+
   <button id="logoutBtn" style="display:none;">Logout</button>
 
   <div id="status">Checking login...</div>
@@ -71,7 +95,9 @@
     GoogleAuthProvider,
     signInWithPopup,
     signOut,
-    onAuthStateChanged
+    onAuthStateChanged,
+    signInWithEmailAndPassword,
+    createUserWithEmailAndPassword
   } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
 
   const firebaseConfig = {
@@ -87,44 +113,68 @@
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
 
-  const loginBtn = document.getElementById("loginBtn");
+  const emailInput = document.getElementById("email");
+  const passwordInput = document.getElementById("password");
+
+  const loginEmailBtn = document.getElementById("loginEmailBtn");
+  const signupBtn = document.getElementById("signupBtn");
+  const loginGoogleBtn = document.getElementById("loginGoogleBtn");
   const logoutBtn = document.getElementById("logoutBtn");
   const status = document.getElementById("status");
 
   const provider = new GoogleAuthProvider();
 
-  // 🔐 LOGIN
-  loginBtn.onclick = async () => {
+  // 📧 LOGIN
+  loginEmailBtn.onclick = async () => {
+    try {
+      await signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  // 🆕 SIGNUP
+  signupBtn.onclick = async () => {
+    try {
+      await createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  // 🔵 GOOGLE LOGIN
+  loginGoogleBtn.onclick = async () => {
     try {
       await signInWithPopup(auth, provider);
     } catch (err) {
-      console.error("Login error:", err);
-
-      if (err.code === "auth/popup-blocked") {
-        alert("Popup blocked. Allow popups and try again.");
-      } else if (err.code === "auth/unauthorized-domain") {
-        alert("Domain not authorized. Add it in Firebase console.");
-      } else {
-        alert("Login failed: " + err.message);
-      }
+      alert(err.message);
     }
   };
 
   // 🚪 LOGOUT
-  logoutBtn.onclick = async () => {
-    await signOut(auth);
-  };
+  logoutBtn.onclick = () => signOut(auth);
 
-  // 🔄 AUTH STATE
+  // 🔄 STATE
   onAuthStateChanged(auth, (user) => {
     if (user) {
-      status.textContent = "Logged in as: " + user.displayName;
-      loginBtn.style.display = "none";
+      status.textContent = "Logged in as: " + (user.email || user.displayName);
+
       logoutBtn.style.display = "block";
+      loginGoogleBtn.style.display = "none";
+      loginEmailBtn.style.display = "none";
+      signupBtn.style.display = "none";
+      emailInput.style.display = "none";
+      passwordInput.style.display = "none";
+
     } else {
       status.textContent = "Not logged in";
-      loginBtn.style.display = "block";
+
       logoutBtn.style.display = "none";
+      loginGoogleBtn.style.display = "block";
+      loginEmailBtn.style.display = "block";
+      signupBtn.style.display = "block";
+      emailInput.style.display = "block";
+      passwordInput.style.display = "block";
     }
   });
 </script>
