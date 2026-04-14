@@ -1,149 +1,71 @@
 <!doctype html>
-
 <html lang="en">
 <head>
-
-  <!-- 🔧 DEV MODE (disable ads safely) -->
-
-  <script>
-    const DEV_MODE = true;
-  </script>
-
-  <!-- ❌ AdSense OFF in testing -->
-
-  <!--
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2567172915118232" crossorigin="anonymous"></script>
-  -->
-
   <meta charset="utf-8" />
-  <title>GeoBrawl — Solo (Test)</title>
+  <title>GeoBrawl Login Test</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <link rel="icon" href="/geofavicon/favicon.ico" />
 
   <style>
-    :root {
-      --bg:#11284B;
-      --panel:#1A355F;
-      --accent:#4A90D6;
-      --text:#E8E8E8;
-    }
-
-    * { box-sizing: border-box; }
-
     body {
       margin:0;
-      padding:0;
-      font-family:system-ui,Arial;
-      color:var(--text);
-      background:var(--bg);
-    }
-
-    header {
-      position: fixed;
-      top: 0;
-      width: 100%;
-      padding: 10px 20px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      z-index: 1000;
-    }
-
-    nav {
-      display: flex;
-      gap: 18px;
-    }
-
-    nav a {
-      text-decoration: none;
-      color: white;
-      font-weight: 700;
-    }
-
-    #container {
-      width:100%;
-      max-width:520px;
-      margin: 0 auto;
-      padding: 100px 20px 20px;
-    }
-
-    h1 {
-      text-align:center;
-      color:var(--accent);
+      height:100vh;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      font-family:system-ui, Arial;
+      background:#11284B;
+      color:white;
     }
 
     .panel {
-      background:var(--panel);
-      padding:14px;
-      border-radius:12px;
-      margin-bottom:14px;
+      background:#1A355F;
+      padding:30px;
+      border-radius:14px;
+      text-align:center;
+      width:300px;
+    }
+
+    h1 {
+      margin-bottom:20px;
+      color:#4A90D6;
     }
 
     button {
       width:100%;
       padding:10px;
-      font-weight:600;
-      border-radius:8px;
+      margin-top:10px;
       border:none;
-      cursor:pointer;
-      background:var(--accent);
+      border-radius:8px;
+      background:#4A90D6;
       color:white;
-      margin-top:6px;
+      font-weight:600;
+      cursor:pointer;
     }
 
-    #streetView, #map {
-      width:100%;
-      height:260px;
-      border-radius:8px;
-      margin-bottom:8px;
+    #logoutBtn {
+      background:#d64a4a;
+    }
+
+    #status {
+      margin-top:15px;
+      font-size:14px;
     }
   </style>
-
 </head>
 
 <body>
 
-<div id="container">
+<div class="panel">
+  <h1>Login Test</h1>
 
-  <h1>GeoBrawl — Solo (Test)</h1>
+  <button id="loginBtn">Login with Google</button>
+  <button id="logoutBtn" style="display:none;">Logout</button>
 
-  <!-- 🔐 LOGIN PANEL -->
-
-  <div class="panel">
-    <button id="loginBtn">Login with Google</button>
-    <button id="logoutBtn" style="display:none;">Logout</button>
-    <div id="userStatus">Loading...</div>
-  </div>
-
-  <!-- 🎮 GAME PANEL -->
-
-  <div class="panel">
-    <button id="startBtn">Start New Game</button>
-    <div>Round: <span id="round">0</span></div>
-    <div>Score: <span id="score">0</span></div>
-  </div>
-
-  <div class="panel">
-    <div id="streetView">Loading Street View…</div>
-  </div>
-
-  <div class="panel">
-    <div id="map"></div>
-    <button id="submitGuessBtn" disabled>Submit Guess</button>
-  </div>
-
-  <div class="panel" id="resultPanel" style="display:none;">
-    <div id="resultText"></div>
-  </div>
-
+  <div id="status">Checking login...</div>
 </div>
-
-<!-- 🔥 FIREBASE + GAME -->
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-analytics.js";
-
   import {
     getAuth,
     GoogleAuthProvider,
@@ -152,13 +74,7 @@
     onAuthStateChanged
   } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
 
-  import {
-    getFirestore,
-    doc,
-    getDoc,
-    setDoc
-  } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
-
+  // ✅ YOUR CONFIG
   const firebaseConfig = {
     apiKey: "AIzaSyCcW_J0iS9sVAKkM-WAeUEUSn5Z9iMcTP8",
     authDomain: "geobrawll.firebaseapp.com",
@@ -170,162 +86,34 @@
   };
 
   const app = initializeApp(firebaseConfig);
-  getAnalytics(app);
   const auth = getAuth(app);
-  const db = getFirestore(app);
 
-  /* ===== GAME ===== */
-  window.initSolo = function () {
+  const loginBtn = document.getElementById("loginBtn");
+  const logoutBtn = document.getElementById("logoutBtn");
+  const status = document.getElementById("status");
 
-    let pickerLatLng = null;
-    let round = 0;
-    let score = 0;
-
-    let user = null;
-    let freeRounds = parseInt(localStorage.getItem("guestRounds") || "0");
-    const FREE_LIMIT = 3;
-
-    const streetViewDiv = document.getElementById('streetView');
-    const mapDiv = document.getElementById('map');
-    const startBtn = document.getElementById('startBtn');
-    const roundSpan = document.getElementById('round');
-    const scoreSpan = document.getElementById('score');
-    const resultPanel = document.getElementById('resultPanel');
-    const resultText = document.getElementById('resultText');
-    const submitGuessBtn = document.getElementById('submitGuessBtn');
-
-    const loginBtn = document.getElementById("loginBtn");
-    const logoutBtn = document.getElementById("logoutBtn");
-    const userStatus = document.getElementById("userStatus");
-
-    let map = new google.maps.Map(mapDiv, {
-      center: { lat: 0, lng: 0 },
-      zoom: 2
-    });
-
-    let marker;
-
-    /* 🔐 AUTH */
-    loginBtn.onclick = async () => {
-      const provider = new GoogleAuthProvider();
+  loginBtn.onclick = async () => {
+    const provider = new GoogleAuthProvider();
+    try {
       await signInWithPopup(auth, provider);
-    };
-
-    logoutBtn.onclick = () => signOut(auth);
-
-    onAuthStateChanged(auth, async (u) => {
-      user = u;
-
-      if (user) {
-        userStatus.textContent = "Logged in: " + user.displayName;
-        loginBtn.style.display = "none";
-        logoutBtn.style.display = "";
-
-        const snap = await getDoc(doc(db, "users", user.uid));
-        freeRounds = snap.exists() ? (snap.data().rounds || 0) : 0;
-
-      } else {
-        userStatus.textContent = "Guest (3 free rounds)";
-        loginBtn.style.display = "";
-        logoutBtn.style.display = "none";
-      }
-    });
-
-    function getRandomStreetViewLocation(callback) {
-      const svService = new google.maps.StreetViewService();
-
-      function tryLocation() {
-        const lat = (Math.random() - 0.5) * 180;
-        const lng = (Math.random() - 0.5) * 360;
-
-        svService.getPanorama({ location: { lat, lng }, radius: 50000 }, (data, status) => {
-          if (status === google.maps.StreetViewStatus.OK) {
-            callback(data.location.latLng);
-          } else {
-            tryLocation();
-          }
-        });
-      }
-
-      tryLocation();
+    } catch (err) {
+      alert("Login failed: " + err.message);
     }
-
-    async function startRound() {
-
-      if (!user && freeRounds >= FREE_LIMIT) {
-        alert("3 free rounds used. Please login.");
-        return;
-      }
-
-      round++;
-      freeRounds++;
-
-      if (user) {
-        await setDoc(doc(db, "users", user.uid), {
-          rounds: freeRounds
-        }, { merge: true });
-      } else {
-        localStorage.setItem("guestRounds", freeRounds);
-      }
-
-      roundSpan.textContent = round;
-      resultPanel.style.display = 'none';
-      submitGuessBtn.disabled = true;
-
-      if (marker) marker.setMap(null);
-
-      getRandomStreetViewLocation(latLng => {
-
-        pickerLatLng = {
-          lat: latLng.lat(),
-          lng: latLng.lng()
-        };
-
-        new google.maps.StreetViewPanorama(streetViewDiv, {
-          position: pickerLatLng,
-          pov: { heading: 0, pitch: 0 },
-          zoom: 1,
-          disableDefaultUI: true
-        });
-
-        map.addListener('click', e => {
-          if (marker) marker.setMap(null);
-
-          marker = new google.maps.Marker({
-            position: e.latLng,
-            map: map
-          });
-
-          submitGuessBtn.disabled = false;
-        });
-      });
-    }
-
-    startBtn.onclick = startRound;
-
-    submitGuessBtn.onclick = () => {
-      if (!marker) return alert("Click map first");
-
-      const dist = google.maps.geometry.spherical.computeDistanceBetween(
-        marker.getPosition(),
-        new google.maps.LatLng(pickerLatLng.lat, pickerLatLng.lng)
-      );
-
-      const points = Math.max(0, 1000 - Math.round(dist / 1609));
-      score += points;
-
-      scoreSpan.textContent = score;
-
-      resultText.innerHTML = `Distance: ${Math.round(dist)} m — Points: ${points}`;
-      resultPanel.style.display = '';
-    };
   };
-</script>
 
-<!-- 🌍 GOOGLE MAPS -->
+  logoutBtn.onclick = () => signOut(auth);
 
-<script async
-src="https://maps.googleapis.com/maps/api/js?key=YOUR_GOOGLE_MAPS_KEY&libraries=geometry&callback=initSolo">
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      status.textContent = "Logged in as: " + user.displayName;
+      loginBtn.style.display = "none";
+      logoutBtn.style.display = "block";
+    } else {
+      status.textContent = "Not logged in";
+      loginBtn.style.display = "block";
+      logoutBtn.style.display = "none";
+    }
+  });
 </script>
 
 </body>
