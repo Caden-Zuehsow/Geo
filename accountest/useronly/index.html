@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Protected Page</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <style>
+    body {
+      margin:0;
+      font-family:system-ui, Arial;
+      background:#11284B;
+      color:white;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      height:100vh;
+    }
+
+    .hidden {
+      display:none;
+    }
+  </style>
+</head>
+
+<body>
+
+<!-- 🚫 BLOCK SCREEN -->
+<div id="blocked">
+  <h2>🔒 Login Required</h2>
+  <p>You must be logged in to access this page.</p>
+  <button onclick="goLogin()">Go to Login</button>
+</div>
+
+<!-- ✅ REAL CONTENT -->
+<div id="content" class="hidden">
+  <h1>Welcome to GeoBrawl 🎮</h1>
+  <p id="userInfo"></p>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+  import {
+    getAuth,
+    onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyCcW_J0iS9sVAKkM-WAeUEUSn5Z9iMcTP8",
+    authDomain: "geobrawll.firebaseapp.com",
+    projectId: "geobrawll",
+    storageBucket: "geobrawll.firebasestorage.app",
+    messagingSenderId: "398103346364",
+    appId: "1:398103346364:web:8ad24433f9bc465466a4b9"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+
+  const blocked = document.getElementById("blocked");
+  const content = document.getElementById("content");
+  const userInfo = document.getElementById("userInfo");
+
+  window.goLogin = () => {
+    window.location.href = "login.html"; // change if needed
+  };
+
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      // ✅ ALLOW ACCESS
+      blocked.style.display = "none";
+      content.classList.remove("hidden");
+
+      userInfo.textContent = "Logged in as: " + (user.email || user.displayName);
+    } else {
+      // ❌ BLOCK ACCESS
+      blocked.style.display = "block";
+      content.classList.add("hidden");
+    }
+  });
+</script>
+
+</body>
+</html>
