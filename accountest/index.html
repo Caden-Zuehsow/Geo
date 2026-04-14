@@ -71,6 +71,9 @@
 <div class="panel">
   <h1>Login Test</h1>
 
+  <!-- ✅ NEW USERNAME FIELD -->
+  <input id="username" type="text" placeholder="Username (for signup)">
+
   <!-- EMAIL LOGIN -->
   <input id="email" type="email" placeholder="Email">
   <input id="password" type="password" placeholder="Password">
@@ -97,7 +100,8 @@
     signOut,
     onAuthStateChanged,
     signInWithEmailAndPassword,
-    createUserWithEmailAndPassword
+    createUserWithEmailAndPassword,
+    updateProfile
   } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
 
   const firebaseConfig = {
@@ -113,6 +117,7 @@
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
 
+  const usernameInput = document.getElementById("username");
   const emailInput = document.getElementById("email");
   const passwordInput = document.getElementById("password");
 
@@ -133,10 +138,27 @@
     }
   };
 
-  // 🆕 SIGNUP
+  // 🆕 SIGNUP WITH USERNAME (SIMPLE)
   signupBtn.onclick = async () => {
+    const username = usernameInput.value.trim();
+
+    if (!username) {
+      alert("Enter a username");
+      return;
+    }
+
     try {
-      await createUserWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
+      const userCred = await createUserWithEmailAndPassword(
+        auth,
+        emailInput.value,
+        passwordInput.value
+      );
+
+      // ✅ THIS is the key line
+      await updateProfile(userCred.user, {
+        displayName: username
+      });
+
     } catch (err) {
       alert(err.message);
     }
@@ -157,7 +179,7 @@
   // 🔄 STATE
   onAuthStateChanged(auth, (user) => {
     if (user) {
-      status.textContent = "Logged in as: " + (user.email || user.displayName);
+      status.textContent = "Logged in as: " + (user.displayName || user.email);
 
       logoutBtn.style.display = "block";
       loginGoogleBtn.style.display = "none";
@@ -165,6 +187,7 @@
       signupBtn.style.display = "none";
       emailInput.style.display = "none";
       passwordInput.style.display = "none";
+      usernameInput.style.display = "none";
 
     } else {
       status.textContent = "Not logged in";
@@ -175,6 +198,7 @@
       signupBtn.style.display = "block";
       emailInput.style.display = "block";
       passwordInput.style.display = "block";
+      usernameInput.style.display = "block";
     }
   });
 </script>
