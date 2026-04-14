@@ -74,7 +74,6 @@
     onAuthStateChanged
   } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
 
-  // ✅ YOUR CONFIG
   const firebaseConfig = {
     apiKey: "AIzaSyCcW_J0iS9sVAKkM-WAeUEUSn5Z9iMcTP8",
     authDomain: "geobrawll.firebaseapp.com",
@@ -92,17 +91,31 @@
   const logoutBtn = document.getElementById("logoutBtn");
   const status = document.getElementById("status");
 
+  const provider = new GoogleAuthProvider();
+
+  // 🔐 LOGIN
   loginBtn.onclick = async () => {
-    const provider = new GoogleAuthProvider();
     try {
       await signInWithPopup(auth, provider);
     } catch (err) {
-      alert("Login failed: " + err.message);
+      console.error("Login error:", err);
+
+      if (err.code === "auth/popup-blocked") {
+        alert("Popup blocked. Allow popups and try again.");
+      } else if (err.code === "auth/unauthorized-domain") {
+        alert("Domain not authorized. Add it in Firebase console.");
+      } else {
+        alert("Login failed: " + err.message);
+      }
     }
   };
 
-  logoutBtn.onclick = () => signOut(auth);
+  // 🚪 LOGOUT
+  logoutBtn.onclick = async () => {
+    await signOut(auth);
+  };
 
+  // 🔄 AUTH STATE
   onAuthStateChanged(auth, (user) => {
     if (user) {
       status.textContent = "Logged in as: " + user.displayName;
