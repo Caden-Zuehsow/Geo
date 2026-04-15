@@ -25,8 +25,6 @@
       width:320px;
     }
 
-    h1 { margin-bottom:20px; color:#4A90D6; }
-
     input {
       width:100%;
       padding:10px;
@@ -48,10 +46,7 @@
     }
 
     #logoutBtn { background:#d64a4a; }
-
     #status { margin-top:15px; font-size:14px; }
-
-    .divider { margin:12px 0; opacity:0.6; }
   </style>
 </head>
 
@@ -67,9 +62,6 @@
   <button id="loginEmailBtn">Login</button>
   <button id="signupBtn">Create Account</button>
 
-  <div class="divider">or</div>
-
-  <button id="loginGoogleBtn">Login with Google</button>
   <button id="logoutBtn" style="display:none;">Logout</button>
 
   <div id="status">Checking login...</div>
@@ -79,8 +71,6 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
   import {
     getAuth,
-    GoogleAuthProvider,
-    signInWithPopup,
     signOut,
     onAuthStateChanged,
     signInWithEmailAndPassword,
@@ -98,10 +88,7 @@
   const firebaseConfig = {
     apiKey: "AIzaSyCcW_J0iS9sVAKkM-WAeUEUSn5Z9iMcTP8",
     authDomain: "geobrawll.firebaseapp.com",
-    projectId: "geobrawll",
-    storageBucket: "geobrawll.firebasestorage.app",
-    messagingSenderId: "398103346364",
-    appId: "1:398103346364:web:8ad24433f9bc465466a4b9"
+    projectId: "geobrawll"
   };
 
   const app = initializeApp(firebaseConfig);
@@ -114,22 +101,20 @@
 
   const loginEmailBtn = document.getElementById("loginEmailBtn");
   const signupBtn = document.getElementById("signupBtn");
-  const loginGoogleBtn = document.getElementById("loginGoogleBtn");
   const logoutBtn = document.getElementById("logoutBtn");
   const status = document.getElementById("status");
 
-  const provider = new GoogleAuthProvider();
-
-  // 📧 LOGIN
+  // LOGIN
   loginEmailBtn.onclick = async () => {
     try {
       await signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
     } catch (err) {
+      console.error(err);
       alert(err.message);
     }
   };
 
-  // 🆕 SIGNUP (UNIQUE USERNAME)
+  // SIGNUP
   signupBtn.onclick = async () => {
     const username = usernameInput.value.trim();
 
@@ -139,7 +124,8 @@
     }
 
     try {
-      // 🔒 CHECK IF USERNAME EXISTS (THIS IS THE KEY PART)
+      console.log("Checking username...");
+
       const usernameDoc = await getDoc(doc(db, "usernames", username));
 
       if (usernameDoc.exists()) {
@@ -147,79 +133,62 @@
         return;
       }
 
-      // CREATE ACCOUNT
+      console.log("Creating user...");
+
       const userCred = await createUserWithEmailAndPassword(
         auth,
         emailInput.value,
         passwordInput.value
       );
 
-      // SAVE USERNAME
+      console.log("User created:", userCred.user.uid);
+
+      console.log("Saving username...");
+
       await setDoc(doc(db, "usernames", username), {
         uid: userCred.user.uid
       });
 
-      // LINK USER → USERNAME
       await setDoc(doc(db, "users", userCred.user.uid), {
         username: username
       });
 
-      // SET DISPLAY NAME
+      console.log("Saved to Firestore");
+
       await updateProfile(userCred.user, {
         displayName: username
       });
 
+      console.log("Profile updated");
+
     } catch (err) {
+      console.error("FULL ERROR:", err);
       alert(err.message);
     }
   };
 
-  // 🔵 GOOGLE LOGIN
-  loginGoogleBtn.onclick = async () => {
-    try {
-      await signInWithPopup(auth, provider);
-    } catch (err) {
-      alert(err.message);
-    }
-  };
-
-  // 🚪 LOGOUT
   logoutBtn.onclick = () => signOut(auth);
 
-  // 🔄 STATE
   onAuthStateChanged(auth, async (user) => {
     if (user) {
+      console.log("User logged in:", user.uid);
+
       let username = user.displayName;
 
-      // fallback to DB
       const snap = await getDoc(doc(db, "users", user.uid));
       if (snap.exists()) {
         username = snap.data().username;
       }
 
       status.textContent = "Logged in as: " + username;
-
       logoutBtn.style.display = "block";
-      loginGoogleBtn.style.display = "none";
-      loginEmailBtn.style.display = "none";
-      signupBtn.style.display = "none";
-      emailInput.style.display = "none";
-      passwordInput.style.display = "none";
-      usernameInput.style.display = "none";
 
     } else {
       status.textContent = "Not logged in";
-
       logoutBtn.style.display = "none";
-      loginGoogleBtn.style.display = "block";
-      loginEmailBtn.style.display = "block";
-      signupBtn.style.display = "block";
-      emailInput.style.display = "block";
-      passwordInput.style.display = "block";
-      usernameInput.style.display = "block";
     }
   });
 </script>
 
 </body>
-</html>
+</html>s
