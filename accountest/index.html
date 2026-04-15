@@ -25,10 +25,7 @@
       width:320px;
     }
 
-    h1 {
-      margin-bottom:20px;
-      color:#4A90D6;
-    }
+    h1 { margin-bottom:20px; color:#4A90D6; }
 
     input {
       width:100%;
@@ -50,19 +47,11 @@
       cursor:pointer;
     }
 
-    #logoutBtn {
-      background:#d64a4a;
-    }
+    #logoutBtn { background:#d64a4a; }
 
-    #status {
-      margin-top:15px;
-      font-size:14px;
-    }
+    #status { margin-top:15px; font-size:14px; }
 
-    .divider {
-      margin:12px 0;
-      opacity:0.6;
-    }
+    .divider { margin:12px 0; opacity:0.6; }
   </style>
 </head>
 
@@ -71,10 +60,7 @@
 <div class="panel">
   <h1>Login Test</h1>
 
-  <!-- ✅ NEW USERNAME FIELD -->
-  <input id="username" type="text" placeholder="Username (for signup)">
-
-  <!-- EMAIL LOGIN -->
+  <input id="username" placeholder="Username">
   <input id="email" type="email" placeholder="Email">
   <input id="password" type="password" placeholder="Password">
 
@@ -83,9 +69,7 @@
 
   <div class="divider">or</div>
 
-  <!-- GOOGLE -->
   <button id="loginGoogleBtn">Login with Google</button>
-
   <button id="logoutBtn" style="display:none;">Logout</button>
 
   <div id="status">Checking login...</div>
@@ -104,18 +88,25 @@
     updateProfile
   } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
 
+  import {
+    getFirestore,
+    doc,
+    setDoc,
+    getDoc
+  } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+
   const firebaseConfig = {
     apiKey: "AIzaSyCcW_J0iS9sVAKkM-WAeUEUSn5Z9iMcTP8",
     authDomain: "geobrawll.firebaseapp.com",
     projectId: "geobrawll",
     storageBucket: "geobrawll.firebasestorage.app",
     messagingSenderId: "398103346364",
-    appId: "1:398103346364:web:8ad24433f9bc465466a4b9",
-    measurementId: "G-YSN5E8T2CM"
+    appId: "1:398103346364:web:8ad24433f9bc465466a4b9"
   };
 
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
+  const db = getFirestore(app);
 
   const usernameInput = document.getElementById("username");
   const emailInput = document.getElementById("email");
@@ -138,7 +129,7 @@
     }
   };
 
-  // 🆕 SIGNUP WITH USERNAME (SIMPLE)
+  // 🆕 SIGNUP (UNIQUE USERNAME)
   signupBtn.onclick = async () => {
     const username = usernameInput.value.trim();
 
@@ -148,13 +139,32 @@
     }
 
     try {
+      // 🔒 CHECK IF USERNAME EXISTS (THIS IS THE KEY PART)
+      const usernameDoc = await getDoc(doc(db, "usernames", username));
+
+      if (usernameDoc.exists()) {
+        alert("Username already taken");
+        return;
+      }
+
+      // CREATE ACCOUNT
       const userCred = await createUserWithEmailAndPassword(
         auth,
         emailInput.value,
         passwordInput.value
       );
 
-      // ✅ THIS is the key line
+      // SAVE USERNAME
+      await setDoc(doc(db, "usernames", username), {
+        uid: userCred.user.uid
+      });
+
+      // LINK USER → USERNAME
+      await setDoc(doc(db, "users", userCred.user.uid), {
+        username: username
+      });
+
+      // SET DISPLAY NAME
       await updateProfile(userCred.user, {
         displayName: username
       });
@@ -177,9 +187,17 @@
   logoutBtn.onclick = () => signOut(auth);
 
   // 🔄 STATE
-  onAuthStateChanged(auth, (user) => {
+  onAuthStateChanged(auth, async (user) => {
     if (user) {
-      status.textContent = "Logged in as: " + (user.displayName || user.email);
+      let username = user.displayName;
+
+      // fallback to DB
+      const snap = await getDoc(doc(db, "users", user.uid));
+      if (snap.exists()) {
+        username = snap.data().username;
+      }
+
+      status.textContent = "Logged in as: " + username;
 
       logoutBtn.style.display = "block";
       loginGoogleBtn.style.display = "none";
