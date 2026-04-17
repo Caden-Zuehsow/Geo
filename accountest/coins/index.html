@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Coin System Test</title>
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+
+<style>
+  body {
+    margin:0;
+    height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    font-family:system-ui, Arial;
+    background:#0f172a;
+    color:white;
+  }
+
+  .panel {
+    background:#1e293b;
+    padding:30px;
+    border-radius:14px;
+    text-align:center;
+    width:320px;
+  }
+
+  button {
+    width:100%;
+    padding:10px;
+    margin-top:10px;
+    border:none;
+    border-radius:8px;
+    background:#3b82f6;
+    color:white;
+    font-weight:600;
+    cursor:pointer;
+  }
+
+  #logoutBtn { background:#ef4444; }
+</style>
+</head>
+
+<body>
+
+<div class="panel">
+  <h2>Coin System Test</h2>
+
+  <button id="loginBtn">Login with Google</button>
+  <button id="logoutBtn" style="display:none;">Logout</button>
+
+  <div id="info">Not logged in</div>
+
+  <button id="addBtn" style="display:none;">+10 Coins</button>
+  <button id="spendBtn" style="display:none;">-5 Coins</button>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut,
+  onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
+
+import {
+  getFirestore,
+  doc,
+  getDoc,
+  setDoc,
+  updateDoc,
+  increment
+} from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCcW_J0iS9sVAKkM-WAeUEUSn5Z9iMcTP8",
+  authDomain: "geobrawll.firebaseapp.com",
+  projectId: "geobrawll"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+const provider = new GoogleAuthProvider();
+
+const loginBtn = document.getElementById("loginBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+const info = document.getElementById("info");
+const addBtn = document.getElementById("addBtn");
+const spendBtn = document.getElementById("spendBtn");
+
+let currentCoins = 0;
+
+// 🔐 LOGIN
+loginBtn.onclick = () => signInWithPopup(auth, provider);
+logoutBtn.onclick = () => signOut(auth);
+
+// ➕ ADD COINS
+addBtn.onclick = async () => {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const ref = doc(db, "users", user.uid);
+
+  await updateDoc(ref, {
+    coins: increment(10)
+  });
+
+  loadCoins();
+};
+
+// ➖ SPEND COINS
+spendBtn.onclick = async () => {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  if (currentCoins < 5) {
+    alert("Not enough coins");
+    return;
+  }
+
+  const ref = doc(db, "users", user.uid);
+
+  await updateDoc(ref, {
+    coins: increment(-5)
+  });
+
+  loadCoins();
+};
+
+// 🔄 LOAD COINS
+async function loadCoins() {
+  const user = auth.currentUser;
+  if (!user) return;
+
+  const ref = doc(db, "users", user.uid);
+  const snap = await getDoc(ref);
+
+  if (snap.exists()) {
+    currentCoins = snap.data().coins || 0;
+  }
+
+  info.textContent = `User: ${user.uid.slice(0,6)} | Coins: ${currentCoins}`;
+}
+
+// 👤 AUTH STATE
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    loginBtn.style.display = "none";
+    logoutBtn.style.display = "block";
+    addBtn.style.display = "block";
+    spendBtn.style.display = "block";
+
+    const ref = doc(db, "users", user.uid);
+    const snap = await getDoc(ref);
+
+    // 🆕 First time user
+    if (!snap.exists()) {
+      await setDoc(ref, { coins: 0 });
+    }
+
+    loadCoins();
+
+  } else {
+    loginBtn.style.display = "block";
+    logoutBtn.style.display = "none";
+    addBtn.style.display = "none";
+    spendBtn.style.display = "none";
+
+    info.textContent = "Not logged in";
+  }
+});
+</script>
+
+</body>
+</html>
