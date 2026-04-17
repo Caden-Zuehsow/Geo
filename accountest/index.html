@@ -114,9 +114,9 @@
     }
   };
 
-  // SIGNUP
+  // SIGNUP (UPDATED)
   signupBtn.onclick = async () => {
-    const username = usernameInput.value.trim();
+    const username = usernameInput.value.trim().toLowerCase();
 
     if (!username) {
       alert("Enter a username");
@@ -126,7 +126,8 @@
     try {
       console.log("Checking username...");
 
-      const usernameDoc = await getDoc(doc(db, "usernames", username));
+      const usernameRef = doc(db, "usernames", username);
+      const usernameDoc = await getDoc(usernameRef);
 
       if (usernameDoc.exists()) {
         alert("Username already taken");
@@ -143,9 +144,9 @@
 
       console.log("User created:", userCred.user.uid);
 
-      console.log("Saving username...");
+      console.log("Reserving username...");
 
-      await setDoc(doc(db, "usernames", username), {
+      await setDoc(usernameRef, {
         uid: userCred.user.uid
       });
 
@@ -153,13 +154,11 @@
         username: username
       });
 
-      console.log("Saved to Firestore");
-
       await updateProfile(userCred.user, {
         displayName: username
       });
 
-      console.log("Profile updated");
+      console.log("Account fully created");
 
     } catch (err) {
       console.error("FULL ERROR:", err);
@@ -167,8 +166,10 @@
     }
   };
 
+  // LOGOUT
   logoutBtn.onclick = () => signOut(auth);
 
+  // AUTH STATE
   onAuthStateChanged(auth, async (user) => {
     if (user) {
       console.log("User logged in:", user.uid);
@@ -191,4 +192,4 @@
 </script>
 
 </body>
-</html>s
+</html>
