@@ -25,6 +25,11 @@
       width:320px;
     }
 
+    h1 {
+      margin-bottom:20px;
+      color:#4A90D6;
+    }
+
     input {
       width:100%;
       padding:10px;
@@ -45,8 +50,19 @@
       cursor:pointer;
     }
 
-    #logoutBtn { background:#d64a4a; }
-    #status { margin-top:15px; font-size:14px; }
+    #logoutBtn {
+      background:#d64a4a;
+    }
+
+    #status {
+      margin-top:15px;
+      font-size:14px;
+    }
+
+    .divider {
+      margin:12px 0;
+      opacity:0.6;
+    }
   </style>
 </head>
 
@@ -55,12 +71,20 @@
 <div class="panel">
   <h1>Login Test</h1>
 
-  <input id="username" placeholder="Username">
+  <!-- ✅ NEW USERNAME FIELD -->
+  <input id="username" type="text" placeholder="Username (for signup)">
+
+  <!-- EMAIL LOGIN -->
   <input id="email" type="email" placeholder="Email">
   <input id="password" type="password" placeholder="Password">
 
   <button id="loginEmailBtn">Login</button>
   <button id="signupBtn">Create Account</button>
+
+  <div class="divider">or</div>
+
+  <!-- GOOGLE -->
+  <button id="loginGoogleBtn">Login with Google</button>
 
   <button id="logoutBtn" style="display:none;">Logout</button>
 
@@ -71,6 +95,8 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
   import {
     getAuth,
+    GoogleAuthProvider,
+    signInWithPopup,
     signOut,
     onAuthStateChanged,
     signInWithEmailAndPassword,
@@ -78,22 +104,18 @@
     updateProfile
   } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
 
-  import {
-    getFirestore,
-    doc,
-    setDoc,
-    getDoc
-  } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
-
   const firebaseConfig = {
     apiKey: "AIzaSyCcW_J0iS9sVAKkM-WAeUEUSn5Z9iMcTP8",
     authDomain: "geobrawll.firebaseapp.com",
-    projectId: "geobrawll"
+    projectId: "geobrawll",
+    storageBucket: "geobrawll.firebasestorage.app",
+    messagingSenderId: "398103346364",
+    appId: "1:398103346364:web:8ad24433f9bc465466a4b9",
+    measurementId: "G-YSN5E8T2CM"
   };
 
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
-  const db = getFirestore(app);
 
   const usernameInput = document.getElementById("username");
   const emailInput = document.getElementById("email");
@@ -101,158 +123,82 @@
 
   const loginEmailBtn = document.getElementById("loginEmailBtn");
   const signupBtn = document.getElementById("signupBtn");
+  const loginGoogleBtn = document.getElementById("loginGoogleBtn");
   const logoutBtn = document.getElementById("logoutBtn");
   const status = document.getElementById("status");
 
-  // LOGIN
+  const provider = new GoogleAuthProvider();
+
+  // 📧 LOGIN
   loginEmailBtn.onclick = async () => {
     try {
       await signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
     } catch (err) {
-      console.error(err);
       alert(err.message);
     }
   };
 
- <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-app.js";
-  import {
-    getAuth,
-    signOut,
-    onAuthStateChanged,
-    signInWithEmailAndPassword,
-    createUserWithEmailAndPassword,
-    updateProfile
-  } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
-
-  import {
-    getFirestore,
-    doc,
-    setDoc,
-    getDoc
-  } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyCcW_J0iS9sVAKkM-WAeUEUSn5Z9iMcTP8",
-    authDomain: "geobrawll.firebaseapp.com",
-    projectId: "geobrawll"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const auth = getAuth(app);
-  const db = getFirestore(app);
-
-  const usernameInput = document.getElementById("username");
-  const emailInput = document.getElementById("email");
-  const passwordInput = document.getElementById("password");
-
-  const loginEmailBtn = document.getElementById("loginEmailBtn");
-  const signupBtn = document.getElementById("signupBtn");
-  const logoutBtn = document.getElementById("logoutBtn");
-  const status = document.getElementById("status");
-
-  // =====================
-  // LOGIN
-  // =====================
-  loginEmailBtn.onclick = async () => {
-    try {
-      await signInWithEmailAndPassword(auth, emailInput.value, passwordInput.value);
-    } catch (err) {
-      console.error(err);
-      alert(err.message);
-    }
-  };
-
-  // =====================
-  // SIGNUP (FIXED)
-  // =====================
+  // 🆕 SIGNUP WITH USERNAME (SIMPLE)
   signupBtn.onclick = async () => {
-    let username = usernameInput.value.trim().toLowerCase();
+    const username = usernameInput.value.trim();
 
-    // ✅ SIMPLE VALIDATION (not too strict)
     if (!username) {
       alert("Enter a username");
       return;
     }
 
-    if (username.length < 3) {
-      alert("Username must be at least 3 characters");
-      return;
-    }
-
     try {
-      const usernameRef = doc(db, "usernames", username);
-
-      console.log("Checking username...");
-      const usernameDoc = await getDoc(usernameRef);
-
-      if (usernameDoc.exists()) {
-        alert("Username already taken");
-        return;
-      }
-
-      console.log("Creating account...");
       const userCred = await createUserWithEmailAndPassword(
         auth,
         emailInput.value,
         passwordInput.value
       );
 
-      const uid = userCred.user.uid;
-      console.log("User created:", uid);
-
-      // ⚠️ Try saving username (but DON'T break signup if it fails)
-      try {
-        console.log("Saving username...");
-        await setDoc(usernameRef, { uid });
-        await setDoc(doc(db, "users", uid), { username });
-      } catch (firestoreError) {
-        console.error("Firestore error:", firestoreError);
-        alert("Account created, but username failed to save.");
-      }
-
-      // Update profile (safe)
+      // ✅ THIS is the key line
       await updateProfile(userCred.user, {
         displayName: username
       });
 
-      alert("Account created successfully!");
-
     } catch (err) {
-      console.error("Signup error:", err);
       alert(err.message);
     }
   };
 
-  // =====================
-  // LOGOUT
-  // =====================
+  // 🔵 GOOGLE LOGIN
+  loginGoogleBtn.onclick = async () => {
+    try {
+      await signInWithPopup(auth, provider);
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  // 🚪 LOGOUT
   logoutBtn.onclick = () => signOut(auth);
 
-  // =====================
-  // AUTH STATE
-  // =====================
-  onAuthStateChanged(auth, async (user) => {
+  // 🔄 STATE
+  onAuthStateChanged(auth, (user) => {
     if (user) {
-      console.log("User logged in:", user.uid);
+      status.textContent = "Logged in as: " + (user.displayName || user.email);
 
-      let username = user.displayName;
-
-      try {
-        const snap = await getDoc(doc(db, "users", user.uid));
-        if (snap.exists()) {
-          username = snap.data().username;
-        }
-      } catch (e) {
-        console.warn("Could not fetch username");
-      }
-
-      status.textContent = "Logged in as: " + (username || "Unknown");
       logoutBtn.style.display = "block";
+      loginGoogleBtn.style.display = "none";
+      loginEmailBtn.style.display = "none";
+      signupBtn.style.display = "none";
+      emailInput.style.display = "none";
+      passwordInput.style.display = "none";
+      usernameInput.style.display = "none";
 
     } else {
       status.textContent = "Not logged in";
+
       logoutBtn.style.display = "none";
+      loginGoogleBtn.style.display = "block";
+      loginEmailBtn.style.display = "block";
+      signupBtn.style.display = "block";
+      emailInput.style.display = "block";
+      passwordInput.style.display = "block";
+      usernameInput.style.display = "block";
     }
   });
 </script>
