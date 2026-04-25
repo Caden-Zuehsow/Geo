@@ -78,6 +78,7 @@
       cursor:pointer;
       transition:transform 0.15s ease, background 0.2s;
       font-size:0.9rem;
+      position: relative;
     }
 
     .choice:hover {
@@ -93,9 +94,20 @@
       margin-bottom:4px;
     }
 
+    .attribution {
+      font-size: 0.6rem;
+      color: #888;
+      display: block;
+      margin-top: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
     #result {
       text-align:center;
       font-weight:600;
+      min-height: 24px;
     }
 
     #scoreBox {
@@ -122,7 +134,6 @@
 <body>
 
 <div id="container">
-
 <h2>Game — Puerto Rico</h2>
 
 <div class="panel controls">
@@ -152,7 +163,6 @@
   <div id="result"></div>
   <div id="scoreBox">Score: <span id="score">0</span></div>
 </div>
-
 </div>
 
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
@@ -197,8 +207,8 @@ async function loadGame(lat, lng) {
   try {
     const filter = document.getElementById("filter").value;
 
-    // Puerto Rico species (correct pool)
-    let localURL = `https://api.inaturalist.org/v1/observations/species_counts?lat=${lat}&lng=${lng}&radius=25&per_page=20`;
+    // Added photo_license filter to ensure commercial safety for your ads
+    let localURL = `https://api.inaturalist.org/v1/observations/species_counts?lat=${lat}&lng=${lng}&radius=25&per_page=20&photo_license=cc0,cc-by,cc-by-sa`;
     if (filter) localURL += `&taxon_id=${filter}`;
 
     const localRes = await fetch(localURL);
@@ -209,88 +219,57 @@ async function loadGame(lat, lng) {
       return;
     }
 
-    const correct = localData.results[
-      Math.floor(Math.random() * localData.results.length)
-    ];
+    const correct = localData.results[Math.floor(Math.random() * localData.results.length)];
 
-    correctAnswer =
-      correct.taxon.preferred_common_name || correct.taxon.name;
-
-    const correctPhoto =
-      correct.taxon.default_photo?.medium_url || "";
+    correctAnswer = correct.taxon.preferred_common_name || correct.taxon.name;
+    const correctPhoto = correct.taxon.default_photo?.medium_url || "";
+    const correctAttr = correct.taxon.default_photo?.attribution || "Unknown Author";
 
     const taxonId = filter || correct.taxon.iconic_taxon_id;
+    const wrongPlaces = [6, 97394, 97391, 97392, 97393, 14, 1];
+    const randomPlace = wrongPlaces[Math.floor(Math.random() * wrongPlaces.length)];
 
-  const wrongPlaces = [6, 97394, 97391, 97392, 97393, 14, 1];
-const randomPlace = wrongPlaces[Math.floor(Math.random() * wrongPlaces.length)];
+    const wrongRes = await fetch(
+      `https://api.inaturalist.org/v1/observations/species_counts?place_id=${randomPlace}&taxon_id=${taxonId}&per_page=200&photo_license=cc0,cc-by,cc-by-sa`
+    );
+    const wrongData = await wrongRes.json();
+    const shuffledWrong = wrongData.results.sort(() => Math.random() - 0.5);
 
-const wrongRes = await fetch(
-  `https://api.inaturalist.org/v1/observations/species_counts?place_id=${randomPlace}&taxon_id=${taxonId}&per_page=200`
-);
-const wrongData = await wrongRes.json();
-
-const shuffledWrong = wrongData.results.sort(() => Math.random() - 0.5);
-
-const options = [];
-
-options.push({
-  name: correctAnswer,
-  photo: correctPhoto,
-  correct: true
-});
-
-// add wrong answers
-for (let item of shuffledWrong) {
-  const name = item.taxon?.preferred_common_name || item.taxon?.name;
-  const photo = item.taxon?.default_photo?.medium_url || "";
-
-  if (
-    name &&
-    name !== correctAnswer &&
-    !options.find(o => o.name === name)
-  ) {
+    const options = [];
     options.push({
-      name: name,
-      photo: photo,
-      correct: false
+      name: correctAnswer,
+      photo: correctPhoto,
+      attribution: correctAttr,
+      correct: true
     });
-  }
 
-  if (options.length >= 4) break;
-}
+    for (let item of shuffledWrong) {
+      const name = item.taxon?.preferred_common_name || item.taxon?.name;
+      const photo = item.taxon?.default_photo?.medium_url || "";
+      const attr = item.taxon?.default_photo?.attribution || "Unknown Author";
 
-    for (let item of wrongData.results) {
-      const name =
-        item.taxon?.preferred_common_name || item.taxon?.name;
-
-      const photo =
-        item.taxon?.default_photo?.medium_url || "";
-
-      if (
-        name &&
-        name !== correctAnswer &&
-        !options.find(o => o.name === name)
-      ) {
+      if (name && name !== correctAnswer && !options.find(o => o.name === name)) {
         options.push({
           name: name,
           photo: photo,
+          attribution: attr,
           correct: false
         });
       }
-
       if (options.length >= 4) break;
     }
 
+    // Fallback for empty options
     while (options.length < 4) {
       options.push({
         name: "Unrelated Species",
         photo: "",
+        attribution: "",
         correct: false
       });
     }
 
     options.sort(() => Math.random() - 0.5);
-
     displayChoices(options);
 
   } catch (err) {
@@ -317,12 +296,12 @@ function displayChoices(options) {
     div.className = "choice";
 
     div.innerHTML = `
-      ${option.photo ? `<img src="${option.photo}">` : ""}
-      <div>${option.name}</div>
+      ${option.photo ? `<img src="${option.photo}" alt="${option.name}">` : ""}
+      <div style="font-weight:bold;">${option.name}</div>
+      <div class="attribution" title="${option.attribution}">${option.attribution}</div>
     `;
 
     div.onclick = () => checkAnswer(option);
-
     container.appendChild(div);
   });
 }
@@ -332,7 +311,6 @@ function checkAnswer(option) {
   answered = true;
 
   const result = document.getElementById("result");
-
   document.querySelectorAll(".choice").forEach(c => {
     c.style.pointerEvents = "none";
   });
@@ -348,6 +326,5 @@ function checkAnswer(option) {
   document.getElementById("score").textContent = score;
 }
 </script>
-
 </body>
 </html>
