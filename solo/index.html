@@ -309,62 +309,23 @@ window.initSolo = function() {
 
   startBtn.onclick = startRound;
 
-submitGuessBtn.onclick = () => {
-  if(!marker) return alert("Click on the map to place your guess!");
+  submitGuessBtn.onclick = () => {
+    if(!marker) return alert("Click on the map to place your guess!");
 
-  const actualLatLng = new google.maps.LatLng(
-    pickerLatLng.lat,
-    pickerLatLng.lng
-  );
-
-  const dist = google.maps.geometry.spherical.computeDistanceBetween(
-    marker.getPosition(),
-    actualLatLng
-  );
-
-  const points = Math.max(0, 1000 - Math.round(dist / 1609.34));
-  score += points;
-  scoreSpan.textContent = score;
-
-  // SHOW CORRECT LOCATION
-  const actualMarker = new google.maps.Marker({
-    position: actualLatLng,
-    map: map,
-    title: "Correct Location",
-    icon: {
-      url: "http://maps.google.com/mapfiles/ms/icons/green-dot.png"
-    }
-  });
-
-  mapMarkers.push(actualMarker);
-
-  // DRAW LINE BETWEEN GUESS AND ACTUAL
-  const line = new google.maps.Polyline({
-    path: [
+    const dist = google.maps.geometry.spherical.computeDistanceBetween(
       marker.getPosition(),
-      actualLatLng
-    ],
-    geodesic: true,
-    strokeColor: "#FF0000",
-    strokeOpacity: 1.0,
-    strokeWeight: 2,
-    map: map
-  });
+      new google.maps.LatLng(pickerLatLng.lat, pickerLatLng.lng)
+    );
 
-  mapMarkers.push(line);
+    const points = Math.max(0, 1000 - Math.round(dist / 1609.34));
+    score += points;
+    scoreSpan.textContent = score;
 
-  // FIT MAP TO BOTH POINTS
-  const bounds = new google.maps.LatLngBounds();
-  bounds.extend(marker.getPosition());
-  bounds.extend(actualLatLng);
-  map.fitBounds(bounds);
+    resultText.innerHTML = `Distance: ${Math.round(dist)} m — Points: ${points}`;
+    resultPanel.style.display = '';
 
-  resultText.innerHTML =
-    `Distance: ${Math.round(dist)} m — Points: ${points}`;
-
-  resultPanel.style.display = '';
-
-  submitGuessBtn.disabled = true;
+    submitGuessBtn.disabled = true;
+  };
 };
 </script>
 
