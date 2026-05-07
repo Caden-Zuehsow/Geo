@@ -1,8 +1,9 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2567172915118232"
+  <script async src="https://pagead2.googlesyndication.com/pagead/js?client=ca-pub-2567172915118232"
      crossorigin="anonymous"></script>
+
   <meta charset="utf-8" />
   <title>GeoBrawl — Solo</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -26,7 +27,6 @@
       background:var(--bg);
     }
 
-    /* ===== HEADER ===== */
     header {
       position: fixed;
       top: 0;
@@ -90,16 +90,20 @@
         display: none;
       }
 
-      nav.active { display: flex; }
-      .menu-toggle { display: block; }
+      nav.active {
+        display: flex;
+      }
+
+      .menu-toggle {
+        display: block;
+      }
     }
 
-    /* ===== PAGE LAYOUT ===== */
     #container {
       width:100%;
       max-width:520px;
       margin: 0 auto;
-      padding: 100px 20px 20px; /* pushes below header */
+      padding: 100px 20px 20px;
     }
 
     #logo {
@@ -110,7 +114,9 @@
       transition:transform 0.2s ease;
     }
 
-    #logo:hover { transform:scale(1.05); }
+    #logo:hover {
+      transform:scale(1.05);
+    }
 
     h1 {
       text-align:center;
@@ -137,7 +143,8 @@
       margin-top:6px;
     }
 
-    #streetView, #map {
+    #streetView,
+    #map {
       width:100%;
       height:260px;
       border-radius:8px;
@@ -172,7 +179,6 @@
 
 <body>
 
-<!-- HEADER -->
 <header>
   <a href="/" class="logo-container">
     <img src="/geofavicon/logo.png">
@@ -199,8 +205,14 @@
 
   <div class="panel">
     <button id="startBtn">Start New Game</button>
-    <div class="score">Round: <span id="round">0</span></div>
-    <div class="score">Score: <span id="score">0</span></div>
+
+    <div class="score">
+      Round: <span id="round">0</span>
+    </div>
+
+    <div class="score">
+      Score: <span id="score">0</span>
+    </div>
   </div>
 
   <div class="panel">
@@ -209,45 +221,57 @@
 
   <div class="panel">
     <div id="map"></div>
-    <button id="submitGuessBtn" disabled>Submit Guess</button>
+
+    <button id="submitGuessBtn" disabled>
+      Submit Guess
+    </button>
   </div>
 
   <div class="panel" id="resultPanel" style="display:none;">
     <div id="resultText"></div>
   </div>
 
-  <!-- FOOTER -->
   <footer>
     <div class="footer-links">
       <a href="/privacy/">Privacy Policy & Terms of Service</a>
     </div>
+
     <p>Website by Mahlan Media Webservices</p>
   </footer>
 
 </div>
 
-<!-- Google Maps API (UNCHANGED) -->
 <script async
-  src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCQHZHmpF-9_7jEixW8z_h_-zbImwnI3S0&libraries=geometry&callback=initSolo">
+src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCQHZHmpF-9_7jEixW8z_h_-zbImwnI3S0&libraries=geometry&callback=initSolo">
 </script>
 
 <script>
 window.initSolo = function() {
+
   let pickerLatLng = null;
   let round = 0;
   let score = 0;
 
   const streetViewDiv = document.getElementById('streetView');
   const mapDiv = document.getElementById('map');
+
   const startBtn = document.getElementById('startBtn');
+
   const roundSpan = document.getElementById('round');
   const scoreSpan = document.getElementById('score');
+
   const resultPanel = document.getElementById('resultPanel');
   const resultText = document.getElementById('resultText');
-  const submitGuessBtn = document.getElementById('submitGuessBtn');
 
-  let svPanorama, map, marker;
-  let mapMarkers = [];
+  const submitGuessBtn =
+    document.getElementById('submitGuessBtn');
+
+  let svPanorama;
+  let map;
+
+  let marker = null;
+
+  let mapObjects = [];
 
   map = new google.maps.Map(mapDiv, {
     center: { lat: 0, lng: 0 },
@@ -255,121 +279,190 @@ window.initSolo = function() {
     gestureHandling: "greedy",
   });
 
+  // ONE click listener only
+  map.addListener('click', e => {
+
+    if (marker) {
+      marker.setMap(null);
+    }
+
+    marker = new google.maps.Marker({
+      position: e.latLng,
+      map: map
+    });
+
+    submitGuessBtn.disabled = false;
+  });
+
   function getRandomStreetViewLocation(callback) {
-    const svService = new google.maps.StreetViewService();
+
+    const svService =
+      new google.maps.StreetViewService();
 
     function tryLocation() {
+
       const lat = (Math.random() - 0.5) * 180;
       const lng = (Math.random() - 0.5) * 360;
-      const latLng = new google.maps.LatLng(lat, lng);
 
-      svService.getPanorama({ location: latLng, radius: 50000 }, (data, status) => {
-        if (status === google.maps.StreetViewStatus.OK) {
-          callback(data.location.latLng);
-        } else {
-          tryLocation();
+      const latLng =
+        new google.maps.LatLng(lat, lng);
+
+      svService.getPanorama(
+        {
+          location: latLng,
+          radius: 50000
+        },
+
+        (data, status) => {
+
+          if (
+            status ===
+            google.maps.StreetViewStatus.OK
+          ) {
+
+            callback(data.location.latLng);
+
+          } else {
+
+            tryLocation();
+          }
         }
-      });
+      );
     }
 
     tryLocation();
   }
 
   function startRound() {
+
     round++;
+
     roundSpan.textContent = round;
+
     resultPanel.style.display = 'none';
+
     submitGuessBtn.disabled = true;
 
-    if(marker) marker.setMap(null);
-    mapMarkers.forEach(item => {
-  if(item) item.setMap(null);
-});
-    marker = null;
-    mapMarkers = [];
+    // Remove player marker
+    if (marker) {
+      marker.setMap(null);
+      marker = null;
+    }
+
+    // Remove result markers + lines
+    mapObjects.forEach(obj => {
+      if (obj) obj.setMap(null);
+    });
+
+    mapObjects = [];
+
+    // Reset map
+    map.setCenter({ lat: 0, lng: 0 });
+    map.setZoom(2);
 
     getRandomStreetViewLocation(latLng => {
-      pickerLatLng = { lat: latLng.lat(), lng: latLng.lng() };
 
-      svPanorama = new google.maps.StreetViewPanorama(streetViewDiv, {
-        position: pickerLatLng,
-        pov: { heading: 0, pitch: 0 },
-        zoom: 1,
-        disableDefaultUI: true
-      });
+      pickerLatLng = {
+        lat: latLng.lat(),
+        lng: latLng.lng()
+      };
 
-      map.addListener('click', e => {
-        if(marker) marker.setMap(null);
-        marker = new google.maps.Marker({
-          position: e.latLng,
-          map: map
-        });
-        submitGuessBtn.disabled = false;
-      });
+      svPanorama =
+        new google.maps.StreetViewPanorama(
+          streetViewDiv,
+          {
+            position: pickerLatLng,
+            pov: {
+              heading: 0,
+              pitch: 0
+            },
+            zoom: 1,
+            disableDefaultUI: true
+          }
+        );
     });
   }
 
   startBtn.onclick = startRound;
 
   submitGuessBtn.onclick = () => {
-  if(!marker) return alert("Click on the map to place your guess!");
 
-  const correctLatLng = {
-    lat: pickerLatLng.lat,
-    lng: pickerLatLng.lng
+    if (!marker) {
+      alert("Click on the map to place your guess!");
+      return;
+    }
+
+    const correctLatLng = {
+      lat: pickerLatLng.lat,
+      lng: pickerLatLng.lng
+    };
+
+    // Distance
+    const dist =
+      google.maps.geometry.spherical
+      .computeDistanceBetween(
+        marker.getPosition(),
+        new google.maps.LatLng(
+          correctLatLng.lat,
+          correctLatLng.lng
+        )
+      );
+
+    // Points
+    const points =
+      Math.max(
+        0,
+        1000 - Math.round(dist / 1609.34)
+      );
+
+    score += points;
+
+    scoreSpan.textContent = score;
+
+    // Correct marker
+    const correctMarker =
+      new google.maps.Marker({
+        position: correctLatLng,
+        map: map,
+        icon:
+          "http://maps.google.com/mapfiles/ms/icons/green-dot.png"
+      });
+
+    // Red line
+    const line =
+      new google.maps.Polyline({
+        path: [
+          marker.getPosition(),
+          correctLatLng
+        ],
+        geodesic: true,
+        strokeColor: "#FF0000",
+        strokeOpacity: 1,
+        strokeWeight: 2,
+        map: map
+      });
+
+    mapObjects.push(correctMarker);
+    mapObjects.push(line);
+
+    // Zoom to both
+    const bounds =
+      new google.maps.LatLngBounds();
+
+    bounds.extend(marker.getPosition());
+    bounds.extend(correctLatLng);
+
+    map.fitBounds(bounds);
+
+    resultText.innerHTML =
+      `Distance: <b>${Math.round(dist).toLocaleString()} meters</b><br>` +
+      `Points: <b>${points}</b>`;
+
+    resultPanel.style.display = '';
+
+    submitGuessBtn.disabled = true;
   };
 
-  // Calculate distance
-  const dist = google.maps.geometry.spherical.computeDistanceBetween(
-    marker.getPosition(),
-    new google.maps.LatLng(correctLatLng.lat, correctLatLng.lng)
-  );
-
-  // Score
-  const points = Math.max(0, 1000 - Math.round(dist / 1609.34));
-  score += points;
-  scoreSpan.textContent = score;
-
-  // Show correct location marker
-  const correctMarker = new google.maps.Marker({
-    position: correctLatLng,
-    map: map,
-    icon: "http://maps.google.com/mapfiles/ms/icons/green-dot.png"
-  });
-
-  // Draw line between guess and correct spot
-  const line = new google.maps.Polyline({
-    path: [
-      marker.getPosition(),
-      correctLatLng
-    ],
-    geodesic: true,
-    strokeColor: "#FF0000",
-    strokeOpacity: 1,
-    strokeWeight: 2,
-    map: map
-  });
-
-  // Save for cleanup next round
-  mapMarkers.push(correctMarker);
-  mapMarkers.push(line);
-
-  // Zoom map to both points
-  const bounds = new google.maps.LatLngBounds();
-
-  bounds.extend(marker.getPosition());
-  bounds.extend(correctLatLng);
-
-  map.fitBounds(bounds);
-
-  // Result text
-  resultText.innerHTML =
-    `Distance: <b>${Math.round(dist)} m</b><br>` +
-    `Points: <b>${points}</b>`;
-
-  resultPanel.style.display = '';
-
-  submitGuessBtn.disabled = true;
 };
 </script>
 
