@@ -282,7 +282,9 @@ window.initSolo = function() {
     submitGuessBtn.disabled = true;
 
     if(marker) marker.setMap(null);
-    mapMarkers.forEach(m => m.setMap(null));
+    mapMarkers.forEach(item => {
+  if(item) item.setMap(null);
+});
     marker = null;
     mapMarkers = [];
 
@@ -310,22 +312,64 @@ window.initSolo = function() {
   startBtn.onclick = startRound;
 
   submitGuessBtn.onclick = () => {
-    if(!marker) return alert("Click on the map to place your guess!");
+  if(!marker) return alert("Click on the map to place your guess!");
 
-    const dist = google.maps.geometry.spherical.computeDistanceBetween(
-      marker.getPosition(),
-      new google.maps.LatLng(pickerLatLng.lat, pickerLatLng.lng)
-    );
-
-    const points = Math.max(0, 1000 - Math.round(dist / 1609.34));
-    score += points;
-    scoreSpan.textContent = score;
-
-    resultText.innerHTML = `Distance: ${Math.round(dist)} m — Points: ${points}`;
-    resultPanel.style.display = '';
-
-    submitGuessBtn.disabled = true;
+  const correctLatLng = {
+    lat: pickerLatLng.lat,
+    lng: pickerLatLng.lng
   };
+
+  // Calculate distance
+  const dist = google.maps.geometry.spherical.computeDistanceBetween(
+    marker.getPosition(),
+    new google.maps.LatLng(correctLatLng.lat, correctLatLng.lng)
+  );
+
+  // Score
+  const points = Math.max(0, 1000 - Math.round(dist / 1609.34));
+  score += points;
+  scoreSpan.textContent = score;
+
+  // Show correct location marker
+  const correctMarker = new google.maps.Marker({
+    position: correctLatLng,
+    map: map,
+    icon: "http://maps.google.com/mapfiles/ms/icons/green-dot.png"
+  });
+
+  // Draw line between guess and correct spot
+  const line = new google.maps.Polyline({
+    path: [
+      marker.getPosition(),
+      correctLatLng
+    ],
+    geodesic: true,
+    strokeColor: "#FF0000",
+    strokeOpacity: 1,
+    strokeWeight: 2,
+    map: map
+  });
+
+  // Save for cleanup next round
+  mapMarkers.push(correctMarker);
+  mapMarkers.push(line);
+
+  // Zoom map to both points
+  const bounds = new google.maps.LatLngBounds();
+
+  bounds.extend(marker.getPosition());
+  bounds.extend(correctLatLng);
+
+  map.fitBounds(bounds);
+
+  // Result text
+  resultText.innerHTML =
+    `Distance: <b>${Math.round(dist)} m</b><br>` +
+    `Points: <b>${points}</b>`;
+
+  resultPanel.style.display = '';
+
+  submitGuessBtn.disabled = true;
 };
 </script>
 
