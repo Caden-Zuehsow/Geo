@@ -388,7 +388,7 @@ let pickerMap, pickerStreetView, pickerLatLng=null;
 let guessMap, guessMarker=null, guesserPanorama=null;
 
 // Init maps with new DOM structure
-function initMaps() {
+window.initMaps = function() {
 pickerMap = new google.maps.Map(document.getElementById("map"), {
   center:{lat:20,lng:0},
   zoom:2,
