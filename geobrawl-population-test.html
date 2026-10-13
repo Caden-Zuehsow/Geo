@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GeoBrawl — Population Split Test</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+:root{color-scheme:dark;--bg:#07111f;--panel:#0d1b2d;--border:#1c3854;--text:#e8f1ff;--muted:#9db2cc;--green:#00d6a0;--blue:#149bff}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#10253d 0,#07111f 55%);color:var(--text);font:15px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+header{min-height:72px;padding:15px clamp(16px,3vw,34px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap}
+.brand{font-size:clamp(23px,3vw,31px);font-weight:850;letter-spacing:-.8px}.brand span{color:var(--green)}.pill{border:1px solid #176b61;border-radius:999px;padding:7px 12px;color:var(--green);font-size:13px}
+main{max-width:1500px;margin:auto;padding:22px clamp(14px,3vw,34px) 34px}.intro{background:linear-gradient(120deg,#10253b,#0b192a);border:1px solid var(--border);border-radius:15px;padding:20px 23px;margin-bottom:18px}.intro h1{margin:0 0 4px;font-size:clamp(23px,3vw,30px)}.intro p{margin:0;color:var(--muted);max-width:850px}
+.layout{display:grid;grid-template-columns:minmax(0,1.8fr) minmax(290px,.8fr);gap:18px;align-items:start}.map-wrap{border:1px solid var(--border);border-radius:14px;overflow:hidden;background:#091827;position:relative}#map{height:min(68vh,720px);min-height:420px;width:100%}.map-tag{position:absolute;z-index:500;top:12px;left:55px;background:#081522ef;border:1px solid #274561;border-radius:8px;padding:7px 10px;font-size:12px;color:#dceaff;pointer-events:none}
+.sidebar{display:grid;gap:14px}.card{background:linear-gradient(145deg,#0e2034,#0a1727);border:1px solid var(--border);border-radius:14px;padding:17px}.card h2{font-size:17px;margin:0 0 12px}.muted{color:var(--muted)}.steps{padding-left:20px;margin:0}.steps li{padding:3px 0;color:#c7d6e9}
+.stats{display:grid;grid-template-columns:1fr 1fr;margin:12px 0 14px}.stat{padding:10px}.stat+.stat{border-left:1px solid var(--border)}.stat-label{color:var(--muted);font-size:13px}.number{font-size:clamp(20px,2vw,27px);font-weight:800;margin-top:4px;overflow-wrap:anywhere}.blue{color:var(--blue)}.green{color:var(--green)}.bar{height:13px;border-radius:99px;overflow:hidden;background:#1c3046;display:flex}.bar-a{background:var(--blue);width:50%;transition:width .25s}.bar-b{background:var(--green);flex:1}.metrics{display:flex;justify-content:space-between;gap:10px;margin:12px 0;color:var(--muted);font-size:13px}.metrics strong{color:var(--text)}
+button,select{font:inherit}button{border:0;border-radius:9px;padding:11px 14px;font-weight:750;cursor:pointer}button:hover{filter:brightness(1.1)}button:disabled{opacity:.5;cursor:not-allowed}.primary{background:linear-gradient(90deg,#00c997,#00dca8);color:#04251f;width:100%}.secondary{background:#132a42;border:1px solid #2a4a68;color:var(--text)}.actions{display:flex;gap:8px;flex-wrap:wrap}.actions button{flex:1}.field{display:grid;gap:6px;margin:10px 0}.field label{font-size:13px;color:var(--muted)}select{width:100%;background:#0a1828;color:var(--text);border:1px solid #294561;border-radius:8px;padding:10px}.status{font-size:13px;color:var(--muted);margin-top:10px;min-height:38px;overflow-wrap:anywhere}.status.error{color:#ff9e9e}.status.ok{color:var(--green)}.fine{font-size:12px;color:var(--muted)}.notice{border-left:3px solid #ffb547;padding:9px 11px;background:#30271766;color:#f1d6a1;font-size:12px;border-radius:4px}
+.leaflet-container{background:#0a1c2b}.leaflet-control-attribution{font-size:10px!important}
+footer{max-width:1500px;margin:auto;padding:0 30px 25px;color:#7991ad;font-size:12px}
+@media(max-width:950px){.layout{grid-template-columns:1fr}.sidebar{grid-template-columns:repeat(2,minmax(0,1fr))}.sidebar .wide{grid-column:1/-1}#map{height:58vh;min-height:380px}}
+@media(max-width:600px){.sidebar{grid-template-columns:1fr}#map{min-height:360px;height:55vh}.intro{padding:17px}.card{padding:15px}.metrics{flex-wrap:wrap}}
+</style>
+</head>
+<body>
+<header><div class="brand">🌐 Geo<span>Brawl</span> <small style="font-size:13px;color:#9db2cc;font-weight:600;letter-spacing:0"> / Population Lab</small></div><div class="pill">LIVE API TEST · PROTOTYPE</div></header>
+<main>
+<section class="intro"><h1>Population Split</h1><p>Draw a boundary across the test region and try to divide its population as evenly as possible. This prototype requests population totals from WorldPop when you submit a split.</p></section>
+<div class="layout">
+<section class="map-wrap"><div class="map-tag">Central Indiana test region · click two points on the border</div><div id="map" aria-label="Interactive Leaflet map"></div></section>
+<aside class="sidebar">
+<section class="card"><h2>How to play</h2><ol class="steps"><li>Choose a data year and resolution.</li><li>Click two points near the rectangle's border to draw a cut.</li><li>Press <b>Fetch &amp; score</b> to request both polygon totals.</li><li>Try to get as close to a 50 / 50 split as possible.</li></ol><p class="fine" style="margin-bottom:0">The endpoints snap to the test region's edge to form two polygons.</p></section>
+<section class="card"><h2>Population split</h2><div class="stats"><div class="stat"><div class="stat-label"><span class="blue">●</span> Side A</div><div class="number" id="popA">—</div><div class="fine" id="pctA">Waiting for API</div></div><div class="stat"><div class="stat-label"><span class="green">●</span> Side B</div><div class="number" id="popB">—</div><div class="fine" id="pctB">Waiting for API</div></div></div><div class="bar"><div class="bar-a" id="barA"></div><div class="bar-b"></div></div><div class="metrics"><span>Difference: <strong id="difference">—</strong></span><span>Score: <strong id="score">— / 1,000</strong></span></div><button id="submit" class="primary">Fetch population &amp; score</button><div id="status" class="status" role="status">Ready. Place two endpoints on the border, then submit.</div><div class="actions" style="margin-top:8px"><button id="reset" class="secondary">Reset line</button><button id="example" class="secondary">Example cut</button></div></section>
+<section class="card"><h2>API settings</h2><div class="field"><label for="year">Population data year</label><select id="year"><option value="2020" selected>2020</option><option value="2025">2025</option><option value="2024">2024</option><option value="2023">2023</option><option value="2022">2022</option><option value="2021">2021</option></select></div><div class="field"><label for="resolution">Resolution</label><select id="resolution"><option value="1km" selected>1 km (faster test)</option><option value="100m">100 m (more detailed)</option></select></div><div class="fine">Provider: <a href="https://api.worldpop.org/v2/" target="_blank" rel="noopener" style="color:#38bdf8">WorldPop API v2</a>. This endpoint returns polygon totals, not a population raster.</div></section>
+<section class="card wide"><h2>Prototype limitations</h2><div class="notice">This tests live API requests and the slice UI. Browser CORS, API limits, unsupported years/resolutions, or provider task failures may prevent a request from completing.</div><p class="fine">For precise GeoSlice-style scoring, the game ultimately needs population grid cells so it can count the cells on each side of the line. Two polygon totals are a first API experiment, not a full production solution.</p></section>
+</aside></div></main>
+<footer>Map tiles © OpenStreetMap contributors · Population estimates © WorldPop · Single-file HTML + JavaScript prototype</footer>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+(() => {
+  const bounds={west:-86.25,east:-85.55,south:39.55,north:40.15};
+  const map=L.map('map').setView([39.85,-85.9],8);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(map);
+  const region=L.polygon([[bounds.south,bounds.west],[bounds.south,bounds.east],[bounds.north,bounds.east],[bounds.north,bounds.west]],{color:'#00d6a0',weight:2,fillColor:'#149bff',fillOpacity:.07,dashArray:'7 5'}).addTo(map);
+  map.fitBounds(region.getBounds().pad(.12));
+  let endpoints=[],markers=[],line=null,halves=[];
+  const $=id=>document.getElementById(id),fmt=n=>Number(n).toLocaleString(undefined,{maximumFractionDigits:0});
+  function status(s,type=''){ $('status').textContent=s;$('status').className='status '+type; }
+  function resetResults(){['popA','popB','difference'].forEach(id=>$(id).textContent='—');$('score').textContent='— / 1,000';$('pctA').textContent=$('pctB').textContent='Waiting for API';$('barA').style.width='50%';}
+  function clearLine(){markers.forEach(m=>map.removeLayer(m));markers=[];if(line)map.removeLayer(line);line=null;halves.forEach(h=>map.removeLayer(h));halves=[];endpoints=[];resetResults();status('Line reset. Click two points near the rectangle border.');}
+  const clamp=(v,min,max)=>Math.max(min,Math.min(max,v));
+  function snap(p){let lat=clamp(p.lat,bounds.south,bounds.north),lng=clamp(p.lng,bounds.west,bounds.east);let choices=[{d:Math.abs(lat-bounds.south),p:L.latLng(bounds.south,lng)},{d:Math.abs(bounds.north-lat),p:L.latLng(bounds.north,lng)},{d:Math.abs(lng-bounds.west),p:L.latLng(lat,bounds.west)},{d:Math.abs(bounds.east-lng),p:L.latLng(lat,bounds.east)}];choices.sort((a,b)=>a.d-b.d);return choices[0].p;}
+  const w=()=>bounds.east-bounds.west,h=()=>bounds.north-bounds.south,total=()=>2*(w()+h());
+  function tOf(p){let x=p.lng-bounds.west,y=p.lat-bounds.south,eps=1e-7;if(Math.abs(p.lat-bounds.south)<eps)return x;if(Math.abs(p.lng-bounds.east)<eps)return w()+y;if(Math.abs(p.lat-bounds.north)<eps)return w()+h()+(w()-x);return 2*w()+h()+(h()-y);}
+  function pointAt(t){t=((t%total())+total())%total();if(t<=w())return[bounds.west+t,bounds.south];t-=w();if(t<=h())return[bounds.east,bounds.south+t];t-=h();if(t<=w())return[bounds.east-t,bounds.north];t-=w();return[bounds.west,bounds.north-t];}
+  function arc(a,b){let end=b;if(end<=a)end+=total();let corners=[w(),w()+h(),2*w()+h(),total()],pts=[pointAt(a)];corners.forEach(c=>{let cc=c;while(cc<=a)cc+=total();if(cc<end-1e-8)pts.push(pointAt(cc));});pts.push(pointAt(b));return pts;}
+  function makePolygons(p1,p2){let a=p1,b=p2,ta=tOf(a),tb=tOf(b);if(ta>tb){[ta,tb]=[tb,ta];[a,b]=[b,a];}let arc1=arc(ta,tb),arc2=arc(tb,ta);
+    // Each polygon follows one boundary arc, then closes along the player's cut.
+    const ring1=[...arc1.slice(0,-1),[b.lng,b.lat],[a.lng,a.lat]];
+    const ring2=[...arc2.slice(0,-1),[a.lng,a.lat],[b.lng,b.lat]];
+    function close(r){const out=[];r.forEach(p=>{if(!out.length||Math.abs(out.at(-1)[0]-p[0])>1e-8||Math.abs(out.at(-1)[1]-p[1])>1e-8)out.push(p)});out.push([...out[0]]);return out;}
+    return [{type:'Polygon',coordinates:[close(ring1)]},{type:'Polygon',coordinates:[close(ring2)]}];
+  }
+  function draw(){halves.forEach(h=>map.removeLayer(h));halves=[];if(endpoints.length!==2)return;if(line)map.removeLayer(line);line=L.polyline(endpoints,{color:'#fff',weight:4}).addTo(map);let p=makePolygons(...endpoints);halves.push(L.geoJSON(p[0],{style:{color:'#149bff',weight:1,fillColor:'#149bff',fillOpacity:.13}}).addTo(map),L.geoJSON(p[1],{style:{color:'#00d6a0',weight:1,fillColor:'#00d6a0',fillOpacity:.13}}).addTo(map));}
+  map.on('click',e=>{if(endpoints.length===2)clearLine();let p=snap(e.latlng);endpoints.push(p);markers.push(L.circleMarker(p,{radius:7,color:'#fff',weight:2,fillColor:endpoints.length===1?'#149bff':'#00d6a0',fillOpacity:1}).addTo(map).bindTooltip(endpoints.length===1?'Endpoint A':'Endpoint B'));if(endpoints.length===1)status('Endpoint A set. Click another point near the border.');else{draw();status('Cut drawn. Fetch population totals to calculate the score.');}});
+  async function getPopulation(geometry){
+    const response=await fetch('https://api.worldpop.org/v2/population',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({geojson:geometry,year:Number($('year').value),resolution:$('resolution').value})});
+    if(!response.ok)throw new Error('WorldPop returned HTTP '+response.status+'.');
+    const data=await response.json(),taskId=data.task_id||data.taskid;
+    if(!taskId){const direct=data.result?.total_population;if(direct!==undefined&&Number.isFinite(Number(direct)))return Number(direct);throw new Error(data.error||data.error_message||'No task ID returned.');}
+    for(let i=0;i<45;i++){await new Promise(r=>setTimeout(r,2000));const poll=await fetch('https://api.worldpop.org/v2/tasks/'+encodeURIComponent(taskId));if(!poll.ok)throw new Error('Could not check task (HTTP '+poll.status+').');const d=await poll.json();if(d.status==='success'||d.status==='finished'){const n=d.result?.total_population??d.data?.total_population;if(n===undefined||!Number.isFinite(Number(n)))throw new Error('Task completed without a population total.');return Number(n);}if(d.status==='failure'||d.error===true)throw new Error(d.error||d.error_message||'WorldPop could not process this polygon.');status('WorldPop is processing… check '+(i+1)+'/45');}
+    throw new Error('WorldPop is taking too long. Try again.');
+  }
+  $('submit').addEventListener('click',async()=>{if(endpoints.length!==2){status('Place two endpoints on the region border first.','error');return;}const button=$('submit');button.disabled=true;resetResults();status('Submitting two live population requests…');try{const [aPoly,bPoly]=makePolygons(...endpoints);const [a,b]=await Promise.all([getPopulation(aPoly),getPopulation(bPoly)]);const total=a+b,pA=total?100*a/total:50,pB=100-pA,diff=total?Math.abs(a-b)/total:0,score=Math.round(1000*(1-diff));$('popA').textContent=fmt(a);$('popB').textContent=fmt(b);$('pctA').textContent=pA.toFixed(1)+'% of returned total';$('pctB').textContent=pB.toFixed(1)+'% of returned total';$('barA').style.width=pA+'%';$('difference').textContent=(diff*100).toFixed(2)+'%';$('score').textContent=fmt(score)+' / 1,000';status('Live totals received. Score reflects how balanced the split is.','ok');}catch(e){console.error(e);status(e.message+' A browser CORS restriction may require a small server-side proxy.','error');}finally{button.disabled=false;}});
+  $('reset').addEventListener('click',clearLine);
+  $('example').addEventListener('click',()=>{clearLine();endpoints=[L.latLng(bounds.south,bounds.west+.25*w()),L.latLng(bounds.north,bounds.west+.72*w())];endpoints.forEach((p,i)=>markers.push(L.circleMarker(p,{radius:7,color:'#fff',weight:2,fillColor:i===0?'#149bff':'#00d6a0',fillOpacity:1}).addTo(map)));draw();status('Example cut loaded. Submit to request population totals.');});
+})();
+</script>
+</body>
+</html>
